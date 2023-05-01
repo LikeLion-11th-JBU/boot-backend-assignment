@@ -3,12 +3,14 @@
 2. java는 프로그래밍 언어
 
 ```
+java
 public class HelloWorldApp{
 	public static void main(String[] args){
 		System.out.println("Hello World!")
 	}
 }
 // 인간 친화적인 언어 (high level language, 고급언어)
+
 ```
 
 컴퓨터가 이해할 수 있는 언어는 : 기계어
