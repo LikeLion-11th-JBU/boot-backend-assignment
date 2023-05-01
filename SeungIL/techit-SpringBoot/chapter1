@@ -1,6 +1,6 @@
 # basic - java project
 
-1. java는 프로그래밍 언어
+2. java는 프로그래밍 언어
 
 ```
 java
@@ -20,13 +20,11 @@ public class HelloWorldApp{
 - JRE(Java Runtime Envrionment) - 바이트 코드안에 바로바로 이해할 수 없는 예를 들어 라이브러리 등 실행을 하기 위한 환경 (JRE에는 JVM과 JVM이 사용하는 라이브러리 등을 포함)
 - JDK(Java DEvelopment Kit) - 자바 언어를 자바 바이트 코드로 변환하는 과정(컴파일 과정)
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/35c3625d-0a7b-4373-a2ba-8a8bae1a0b5e/Untitled.png)
-
 - Java Bytecode를 만드는데 Java를 쓸 필요는 없다( ex : kotlin)
 
 ---
 
-1. Code Editor와 IDE
+3. Code Editor와 IDE
     - Java 코드를 효율적으로 작성하기 위한 도구
 
 Code Editor - vscode 같은거 프로그래밍 언어에 따라 문법 검증 및 편집 편의성 제공
@@ -35,18 +33,18 @@ IDE - visual studio, intellij 이런거 사용하는 언어 및 프레임워크�
 
 ---
 
-1. Docker Setting (Deep한 설명 x, 따로 강의같은걸 듣는걸 추천)
+4. Docker Setting (Deep한 설명 x, 따로 강의같은걸 듣는걸 추천)
 - Dockor 기초 개념
     - 컨테이너 기반의 가상화 기술이다.
     - OS 위에 컨테이너를 올려 어플리케이션을 활용
         
-        ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7902d070-deaa-48fa-b0a9-cc5e00f8e2fe/Untitled.png)
+        
         
     - 웹 어플리케이션 개발에 필요한 다양한 소프트웨어의 설치를 간소화 해준다.
 - Docker Desktop 설치
 - Docker 테스트 해보기
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/9903d952-f275-4e18-a4f5-39947169d191/Untitled.png)
+
 
 [http://127.0.0.1/](http://127.0.0.1/)
 
@@ -56,7 +54,7 @@ ctrl + shift + r 하면 캐쉬를 없앰
 
 ---
 
-1. Client - Server Model
+5. Client - Server Model
 - Spring Boot - (Web) Application Framework (웹이랑 관련 없는 걸 만들 때도 사용 되기 때문에 Web에 괄호)
 - internet 의 Conerstone(주춧돌) : HTML, CSS, JS
 - HTML(Hyper Text Markup Language) - 브라우저에 표시 될 내용을 기술하는 언어
@@ -70,14 +68,14 @@ ctrl + shift + r 하면 캐쉬를 없앰
 - html 문서를 만들 때 일종의 템플릿 화 했다 라고 할 수 있음
 - 백엔드 개발자 - 비즈니스 로직, 데이터를 관리하는
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/378a1668-6459-4930-b560-5f703838b297/Untitled.png)
+
     
 - Full-Stack 개발자 - 프론트엔드와 백엔드를 동시에 다룰 수 있는 개발자
 - 하지만 요즘 시대엔 ai, nft(비트코인),모바일 개발자 등은 일반적인 웹 개발의 범주 밖
 - 인터넷 - 원격으로 연결된 수많은 컴퓨터들이 이루는 네트워크
 - http - 어떠한 형식으로 파일을 요청, 응답할지 정해놓은
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1ecfb36a-a337-492b-975b-925f5fbda889/Untitled.png)
+
 
 <Client - Server Model>
 
@@ -89,7 +87,7 @@ ctrl + shift + r 하면 캐쉬를 없앰
 
 ---
 
-1. Spring Boot 시작하기
+6. Spring Boot 시작하기
 
 <실습>
 
