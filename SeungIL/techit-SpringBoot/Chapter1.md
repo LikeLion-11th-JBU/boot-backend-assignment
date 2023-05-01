@@ -91,7 +91,7 @@ ctrl + shift + r 하면 캐쉬를 없앰
 
 낮은 버전을 사용하는 이유 : 레퍼런스 등
 
-group 주
+group 누가 만들었는지 구분하는
 
 artifact  가독성보다 코드이름
 
