@@ -1,0 +1,89 @@
+JVM - JRE - JDK
+
+Java로 이뤄진 프로젝트는 ‘*.java’파일에 정의돈 Java Source 코드로 구성된다.
+
+- javac  = Java Compiler
+    
+    Compiler : 소스코드를 기계어로 바꾸는 과정
+    
+
+실행 가능한 파일로 제작(패키징)
+
+하나하나하 javac로 하기엔 너무 귀찮고 번잡함.
+
+그래서 나온게 Maven,Gradle
+
+Maven
+
+Java를 위한 Build Automation Tool
+
+C#,Ruby 등의 다른 언어를 위해서도 가능.
+
+Project Object Model(POM)
+
+xml의 형태로 프로젝트를 정의
+
+opm.xml을 분석해 프로젝트 빌드
+
+resources 안에 있는  값들 설명해주심.
+
+<modelVersion>
+
+모델버전은 프로젝트 모델의 모델을 의미함.
+
+<parent>
+
+스프링부트를 하게된다면 첫번째는 페어런트가 된다
+
+페어런트 = 부모 즉 지금 하는 프로젝트가 어디 프로젝트의 하위프로젝트인지 결정하는 부분
+
+<groupId>
+
+이 프로젝트라는것이 어떤 그룹하에 있느냐를 나타넴
+
+<artifactId>,<version>,<name>,<description>여러가지 있음
+
+<properties>
+
+이 프로젝트를 다룰때 어떤 자바 버전을 다룰지
+
+<dependencies>
+
+우리가 사용할 외부프레임워크
+
+- <build>
+    
+    어떻게 빌드를 실제로 진행할지 정하는 코드
+    
+    <plugins>등
+    
+
+의존성.
+
+빌드를 할 때에 실제로 파일이 있어야함.
+
+이 파일이 어디있는지 확인 하려면 
+
+cmd
+
+cd .m2
+
+[https://mvnrepository.com/](https://mvnrepository.com/)
+
+Gradle
+
+Java를 위한 Build Automation Tool
+
+C, C++, Javascript 등을 위해서도 사용할 수 있다.
+
+build.gradle
+
+groovy라는 언어로 프로젝트 정의
+
+Sub-project 등을 포함시키는 용도의 setting.gradle도 있다.
+
+Kitlin을 사용하여 정의할 수도 있다.(build.gradle.kts)
+
+그레이드와 메이븐
+
+그레이드는 빌드를 자기가 정할수있다.
