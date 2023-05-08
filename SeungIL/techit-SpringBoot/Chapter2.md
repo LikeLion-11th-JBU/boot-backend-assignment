@@ -1,5 +1,5 @@
 # Build Automaion Tool
-JVM - JRE - JDK
+* JVM - JRE - JDK
 
 * java로 이뤄진 프로젝트는 '.java' 파일에 정의된 소스코드로 구성된다.
 * JDK에는 javac(자바 컴파일러)가 있다.
