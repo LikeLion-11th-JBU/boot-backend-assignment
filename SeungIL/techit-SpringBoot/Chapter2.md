@@ -1,4 +1,4 @@
-# Build Automaion Tool
+# Build Automation Tool
 * JVM - JRE - JDK
 
 * java로 이뤄진 프로젝트는 '.java' 파일에 정의된 소스코드로 구성된다.
