@@ -1,0 +1,87 @@
+OSI 의 7계층 물리, 데이터링크, 네트워크, 전송, 세션, 표현, 응용 계층
+
+TCP/IP 의 4계층 네트워크 접근, 인터넷, 전송, 응용 계층
+
+응용계층 < HTTP, SMTP, FTP 
+
+주고받을 데이터를 어떤 규칙을 가지고 작성하느냐.
+
+P는 PROTOCOL
+
+Spring boot 는 응용 계층과 관련 나머지는 깊이 이해할 필요는 없음.
+
+HTTP: HyperText (정보를 담은 텍스트) Transfer (통신) Protocol (규약)
+
+서류를 보면 어디에 무슨 정보를 넣어야하는지 정리되어 있는 것처럼 HTTP도 마찬가지
+
+응용 계층에 정의된 통신 규약
+
+서버와 클라이언트 간에 메시지를 전달하는 형식을 저으이한 규약
+
+REST = HTTP? 아니다 다른것이다.
+
+REST도 규칙이기는 하다
+
+REpersentational State Transfer
+
+좋은 API를 만들기 위한 규칙이 담겨져 있는것.
+
+Backend 서버를 만들때 남용되는 말.
+
+HTTP 요청 / 응답의 형식
+
+요청
+
+GET/index.html HTTP 1.1 >Request Line: Method, Path, Version 등
+
+Host: [www.example.com](http://www.example.com) > Request Headers: HTTP 요청에 대한 부수적인 데이터
+
+Request Body: HTTP 요청에 관한 실제 데이터
+
+응답
+
+HTTP/1.1 200 OK > Status Line: 요청 처리에 대한 상태 표시줄
+
+Cacge-Control: max-age=604800 > Response Headers: HTTP 응답에 대한 부수적인 데이터.
+
+<HTML 문서> > Response Body: 응답 데이터
+
+URL Uniform Resource Locator: Internet 상에 자원의 위치를 나타내는 문자열.
+
+scheme > Http:// 이런거
+
+userinfo, @ 이건 필요 할 수도 아닐수도 있음 통신 규약에 따라 다름
+
+host > IP, 도메인
+
+: , port > 어떠한 컴퓨터에서 어떠한 프로세스 요청을 보낼건지 구분하기 위한 숫자.
+
+여기까지가 인터넷 상의 컴퓨터를 나타내는 부분
+
+여기서부터는 컴퓨터 안의 위치 (경로)
+
+path ? query # fragment
+
+Media Type > 인터넷 상에서 주고받는 데이터의 형식.
+
+image/jpeg , video/mp4 , application/javascript 
+
+한두가지가 아니고 굉장히 많음.
+
+content - type: text/html
+
+Content - Type: HTTP의 응답 데이터(Body)의 Media Type를 알려주는 헤더
+
+application/json, multipart/form-data
+
+JSON과 Multipart Form-Data를 많이 활용한다.
+
+JSON - JavaScript Object Notation
+
+데이터를 주고받을 때 흔히 사용하는 형태
+
+속성(Attribute) - 값(Value)의 형태와 배열(Array)을 활용한다.
+
+일반적인 데이터를 표현한 객체(VO)는 JSON 형태로 주고받는다.
+
+{}로 열고 닫는다 “”로 키를 설정 :로 값을 설정.

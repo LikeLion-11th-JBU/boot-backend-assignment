@@ -1,0 +1,48 @@
+Spring MVC
+
+MVC
+
+Model - View - Controller
+
+설계패턴의 일종
+
+View > 사용자가 확인하는 데이터의 표현.
+
+Controller > 사용자의 입출력을 다루는 부분.
+
+Model > 서비스 데이터 자체.
+
+View에서 개시>  Controller 사용 > Model을 조정 > View를 갱신 > View는 갱신된 것을 사용자에게 다시 보여줌.
+
+External Client (Front Controller Pattern)
+
+Dispatcher Servlet
+
+Handler Mapping
+
+Controller
+
+Model
+
+View Resolver
+
+1. 외부 요청 발생
+2. 요청 경로 확인을 위해 전달
+3. Controller로 전달
+4. Model 조작
+5. 갱신된 데이터 전달
+6. 응답 전달
+7. 응답을 Client로 전송
+  7-1. 데이터 전송 또는
+  7-2. 데이터를 포함한 View 제작
+8.사용자에게 View 제공
+
+Controller와 RequestMapping
+
+HTML 외에 데이터 전송을 위해 Body와 MediaType을 설정할 수 있다.
+
+Controller와 RestController
+
+간단하게, Controller + ResponseBody
+
+기본적으로 어떠한 형태의 응답이든 데이터의 일종이다.

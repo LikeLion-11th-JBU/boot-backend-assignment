@@ -1,0 +1,25 @@
+동적 HTML
+
+Example Domain
+
+사용자, 상황에 따른 변화가 없다.
+
+현재 시각, 사용자에 따른 내용이 달라진다.
+
+Static(정적) Contents: 이미 작성이 완료되어 변하지 않는 파일들, HTML, CSS, JS, Image 등
+
+Dynamic(동적) Web Page: 서버에서 HTML 문서의 내용을 데이터에 따라 다르게 작성하여 제공되는 페이지
+
+JSP와 Thymeleaf
+
+React, Vue, Node와 Spring Boot
+
+Framework 선택의 기준
+
+리액트(자바 스크립트 라이브러리)
+
+뷰js
+
+UI를 만들기 위한 라이브러리 / 프레임워크 - HTML을 효율적으로 작성하기 위한 기술 (프론트)
+
+노드js

@@ -1,0 +1,20 @@
+- Docker는 컨테이너를 떠올리면 된다.
+    
+    OS 위에 컨테이너를 올려 어플리케이션을 활용.
+    
+- 가상화 기술
+    
+    기존 OS
+    
+    - Hadware > Host OS > Hypervisor > Guest OS > 라이브러리 > Application
+    
+    Docker
+    
+    - Hardware > Host OS > 라이브러리 > Application
+    - 그러므로 Docker이 훨씬 가볍다.
+- CMD에서 docker —help하면 여러 도움말들이 나옴
+- docker run -d -p 80:80 docker/getting-started
+- docker:Docker Daemon에 요청을 보낸다
+- run : 컨테이너를 실행한다.
+- -d : Detacher, 컨테이너를 background에서 실행하는 옵션.
+- docker/getting-started : 컨테이너로 실행 할 이미지의 이름.
