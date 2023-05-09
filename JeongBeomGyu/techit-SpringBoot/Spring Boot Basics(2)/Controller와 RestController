@@ -1,0 +1,32 @@
+MVC (model view controller) - view는 사용자가 확인하는 데이터의 표현 (모니터에 표시되어 있는 HTML문서는 완벽하게 그 모습을 갖춘채로 확인할 수 있다.) controller는 사용자의 입출력을 다루는 부분(키보드, 마우스를 통해서 의사를 표시할 수 있다.) model은 서비스 데이터 자체
+mvc 패턴을 말할 때 작동하는 방식
+1. 사용자가 view에서 어플리케이션이 작동하는 모습을 보게된다. 
+2. 자신이 할 수 있는 행동들을 controller을 사용해서 전달한다.
+3. controller는 model이라는 서비스 데이터를 조정하게 된다.(상태를 변환시키거나, 데이터를 추가하거나 제거하는 작업을 한다.)
+4. model은 controller에서 지시받은 내용을 가지고 view를 갱신하게 된다.
+5. view는 사용자에게 새로운 모습을 보여준다. 
+이 패턴을 mvc 패턴이라고 한다.
+
+Spring mvc구성
+External Client( 다른 클라이언트 프로그램이나 브라우저)는 Disapatcher Servlet라는 프레임워크의 일부분에 들어간다.
+Disapatcher는 다시 Handler Mapping(path와 메소드가 연결이 어떻게 되는지 분석, 관리하는 부분)으로 간다.
+Disapatcher servlet은 view와 contoller, model을 직접적으로 관리를 하고, 사용자와 대화를 한다.(Front Controller Pattern)
+1. 외부 요청 발생
+2. 요청 경로 확인을 위해 전달 (Disapatcher Servlet이 Handler Mapping으로 이 요청이 어떤 Controller 리퀘스트 맵핑으로 요청이 전달이 되어야하는지를 알려달라고 한다.)
+3. 해당 요청이 Controller로 전달
+4. Controller가 Model 조작
+5. Model이 Controller에 의해 갱신된 데이터를 Controller에 전달을 한다.
+6. contoller는 함수의 형태로 응답을 Disapatcher Servlet에 전달을 한다. 
+7. 응답을 Client로 전송한다 (상황에 따라서 데이터 전송 또는 데이터를 포함한 View를 제작한다.)
+8. 사용자에게 view제공한다.
+(Spring boot에서는 Controller와 Model부분을 제공한다.)
+
+요청 경로를 설정하기 위해 Controller Annotation을 사용해서 class에 붙여주면 IoC Container가 관리하는 Beans
+
+RequestMapping을 이용해 경로에 따라 실행될 함수를 지정할 수 있다.
+
+HTTP Method 별로 별도의 어노테이션이 존재한다. (GetMapping, PostMapping 등)MediaType을 설정할 수 있다. ResponseBody가 붙으면 viewResolver를 거치지 않고 바로 data를 클라이언트에게 돌려준다.
+RestContoller - Controller + ResponseBody
+기본적으로 어떠한 형태의 응답이든 데이터의 일종이다.
+
+
