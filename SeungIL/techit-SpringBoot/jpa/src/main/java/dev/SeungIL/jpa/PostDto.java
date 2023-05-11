@@ -1,21 +1,33 @@
 package dev.SeungIL.jpa;
+import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 public class PostDto {
     private int id;
-    private  String title;
+    @NotBlank
+    private String title;
+
+    @NotBlank
+    @Size(max = 40, message = "size under 40")
     private String content;
+
+    @Size(min = 3, max = 10, message = "size between 3 - 10")
     private String writer;
-    private int boardid;
+    private int boardId;
+
+    private ValidTestDto dto;
 
     public PostDto() {
     }
 
-    public PostDto(int id, String title, String content, String writer, int boardid) {
+    public PostDto(int id, String title, String content, String writer, int boardId) {
         this.id = id;
         this.title = title;
         this.content = content;
         this.writer = writer;
-        this.boardid = boardid;
+        this.boardId = boardId;
     }
 
     public int getId() {
@@ -50,12 +62,12 @@ public class PostDto {
         this.writer = writer;
     }
 
-    public int getBoardid() {
-        return boardid;
+    public int getBoardId() {
+        return boardId;
     }
 
-    public void setBoardid(int boardid) {
-        this.boardid = boardid;
+    public void setBoardId(int boardId) {
+        this.boardId = boardId;
     }
 
     @Override
@@ -65,7 +77,7 @@ public class PostDto {
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
                 ", writer='" + writer + '\'' +
-                ", boardid=" + boardid +
+                ", boardId=" + boardId +
                 '}';
     }
 }
