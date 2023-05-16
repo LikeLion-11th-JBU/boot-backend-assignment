@@ -1,0 +1,159 @@
+이제 앞선 챕터에서 하였던 CRUD에 JPA - Hibernate를 이용하여 어플리케이션이 종료되도 데이터가 남아있을 수 있도록 해봅시다.
+
+## CrudRepository
+
+Spring Data에 정의된 `CrudRepository`는 특정 `Entity` 에 대하여, CRUD에 필요한 기능을 제공하는 `Repository` 입니다.
+
+```java
+public interface PostRepository extends CrudRepository<PostEntity, Long> { } 
+```
+
+`CrudRepository<T, ID>` 를 정의할때, `T` 는 `Entity`, `ID` 는 해당 `Entity` 의 `ID` Column의 Java 자료형을 의미합니다. 데이터베이스에서 사용하고자 하는 `Entity` 에 대하여 `interface` 를 정의하면, 해당 `Repository` 를 `Bean` 으로 주입받아 사용할 수 있습니다.
+
+```java
+@Repository
+public class PostDao {
+    private static final Logger logger = LoggerFactory.getLogger(PostDao.class);
+    private final PostRepository postRepository;
+
+    public PostDao(
+            @Autowired PostRepository postRepository
+    ) {
+        this.postRepository = postRepository;
+    }
+		...
+}
+```
+
+`CrudRepository<T, ID>` 에는 CRUD를 위한 기초적인 함수들이 정의되어 있는데, 이 함수들은 Generic Type `T` Entity를 기준으로 작동합니다.
+
+- `save(T entity)` : 인자로 전달받은 `T` 를 저장합니다. 이는 새 `Entity`의 생성, 기존 `Entity`의 갱신 두가지 목적으로 사용할 수 있습니다.
+- `findById(ID id)` : 인자로 전달받은 `ID` 를 가진 `T` 를 반환합니다.
+- `findAll()` : 모든 `T` 를 반환합니다.
+- `delete(T entity)` : 전달받은 `T` 를 삭제합니다.
+
+이 함수들을 `PostDao` 에서 사용하여, `PostDto` 의 데이터를 정리해 `PostEntity` 로 전환, 필요한 CRUD 작업을 진행하도록 합시다.
+
+```java
+@Repository
+public class PostDao {
+    private static final Logger logger = LoggerFactory.getLogger(PostDao.class);
+    private final PostRepository postRepository;
+
+    public PostDao(
+            @Autowired PostRepository postRepository
+    ) {
+        this.postRepository = postRepository;
+    }
+
+		public void createPost(PostDto dto){
+        PostEntity postEntity = new PostEntity();
+        postEntity.setTitle(dto.getTitle());
+        postEntity.setContent(dto.getContent());
+        postEntity.setWriter(dto.getWriter());
+        PostEntity target = this.postRepository.save(postEntity);
+    }
+		...
+}
+```
+
+`PostDao` 에 예시로 만든 `createPost` 함수를, `PostController` 에서 분리했던 `PostService` 와 연결하여 사용합니다.
+
+```java
+@Service
+public class PostService {
+    private static final Logger logger = LoggerFactory.getLogger(PostService.class);
+    private final PostDao postDao;
+
+    public PostService(@Autowired PostDao postDao){
+        this.postDao = postDao;
+    }
+
+    public void createPost(PostDto postDto){
+        this.postDao.createPost(postDto);
+    }
+		...
+}
+```
+
+자연스럽게 `Controller - Service - Repository` 의 형태로 어플리케이션이 구성됩니다. 나머지 RUD 작업을 위한 함수들도 `CrudRepository` 를 활용하는 형태로 변경해 봅시다
+
+```java
+@Repository
+public class PostDao {
+    private static final Logger logger = LoggerFactory.getLogger(PostDao.class);
+    private final PostRepository postRepository;
+
+    public PostDao(
+            @Autowired PostRepository postRepository
+    ) {
+        this.postRepository = postRepository;
+    }
+
+    public void createPost(PostDto dto){
+        PostEntity postEntity = new PostEntity();
+        postEntity.setTitle(dto.getTitle());
+        postEntity.setContent(dto.getContent());
+        postEntity.setWriter(dto.getWriter());
+        postEntity.setBoardEntity(null);
+        PostEntity target = this.postRepository.save(postEntity);
+    }
+
+    public PostEntity readPost(int id) {
+        Optional<PostEntity> postEntity = this.postRepository.findById((long) id);
+        if(postEntity.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        return postEntity.get();
+    }
+
+    public Iterator<PostEntity> readPostAll() {
+        return this.postRepository.findAll().iterator();
+    }
+
+    public void updatePost(int id, PostDto dto){
+        Optional<PostEntity> targetEntity = this.postRepository.findById(Long.valueOf(id));
+        if (targetEntity.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        PostEntity postEntity = targetEntity.get();
+
+        postEntity.setTitle(
+                dto.getTitle() == null ? postEntity.getTitle() : dto.getTitle());
+        postEntity.setContent(
+                dto.getContent() == null ? postEntity.getContent() : dto.getContent());
+        this.postRepository.save(postEntity);
+    }
+
+    public void deletePost(int id){
+        Optional<PostEntity> targetEntity = this.postRepository.findById((long) id);
+        if (targetEntity.isEmpty()){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        this.postRepository.delete(targetEntity.get());
+    }
+}
+```
+
+여기서 `postRepository.findById(id)` 를 결과가 `Optional<PostEntity>` 로 반환되는데, `Optional` 은 Java의 null-safety를 위한 차선책 입니다.
+
+- `Optional<T>`
+    
+    `Optional<T>` 로 정의된 변수 혹은 객체는, `T` 객체를 가지고 있을 수도 있고, 없을 수도 있습니다. 현재 `PostRepository` 에 `id` 를 전달하는 과정에, 해당 `id` 를 가진 `Entity` 가 없을 수도 있습니다. 그래서 `PostRepository` 는 `Optional<PostEntity>` 를 반환합니다. 개발자가 실제 `PostEntity` 의 값을 사용하고 싶다면 먼저 `Optional<PostEntity>` 가 실제로 `PostEntity` 를 가지고 있는지를 확인해줘야 합니다. 이때 사용하는 함수가 `isPresent()` 또는 `isEmpty()` 입니다.
+    
+    `isPresent()` 가 `true` 이거나 `isEmpty()` 가 `false` 일때는 실제 반환된 결과가 `null` 이 아니라는 의미입니다. 그러면 계속해서 `get()` 함수를 활용하여 실제 `PostEntity` 를 돌려받을 수 있습니다.
+    
+    만약 반대로 `isPresent()` 가 `false` 이거나 `isEmpty()` 가 `true` 일때는 결과가 `null` 이라는 의미입니다. 이 경우 요청한 데이터가 없다는 의미에서 `ResponseStatusException(HttpStatus.NOT_FOUND)` 예외를 발생시키면, 사용자에게 해당 데이터가 없다는 메시지가 발생합니다.
+    
+
+여기에 내부적으로 추가적인 함수를 선언하여 작성하면, 좀더 복잡한 SQL 기준 `where` 를 사용한 결과나 `top` 을 이용한 상위 기록을 조회할 수도 있습니다.
+
+```java
+Iterable<PostEntity> findTop10ByWriterAndCreatedAtAfter(String writer, Instant createdAt);
+```
+
+이때 작성하는 함수의 이름을 기준으로 결과가 반환됩니다. 위의 함수는 특정 사람이 작성한 특정 시점 이후의 게시글 10개를 반환하는 함수가 됩니다. `find*By` 에서 `*` 에 `TopN` , `All` 등 찾고자 하는 기준을 작성한 뒤, `-By` 뒤로는 일치 또는 비교하고 싶은 `Entity` 의 인자들을, `And` 또는 `Or` 로 엮어서 나열하면 됩니다. 현재는 사용하지 않고 있지만, `OrderById` 등 특정 Column을 기준으로 정렬할 수 도 있습니다.
+
+---
+
+간단한 `CrudRepository` 의 설명과 함깨 CRUD 작업이 마무리 되었습니다. 웹 서비스 백엔드를 만든다는 의미의 기초는 사용자가 필요로 하는 데이터의 조작을 의미하게 됩니다. 사용자 검증이 필요하지 않은 서비스를 만든다는 관점에서는 현재까지가 필요한 기능 및 지식의 기초라 할 수 있겠습니다. 다음 단계에서 부터는 만들어진 서버를, 필요한 코드를 더 깔끔하게 정리하고, 좀더 서비스의 모습을 갖추기 위한 사용자 분별 등을 위한 단계로 넘어갑니다.
