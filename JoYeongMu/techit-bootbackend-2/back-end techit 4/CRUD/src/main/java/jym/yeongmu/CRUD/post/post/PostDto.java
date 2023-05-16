@@ -1,4 +1,4 @@
-package post;
+package jym.yeongmu.CRUD.post.post;
 
 public class PostDto {
     private String tilte;
