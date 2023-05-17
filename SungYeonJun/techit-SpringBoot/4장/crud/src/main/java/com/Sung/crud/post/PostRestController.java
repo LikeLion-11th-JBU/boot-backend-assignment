@@ -45,7 +45,7 @@ public class PostRestController {
         logger.info("in read one");
         return this.postService.readPost(id);
     }
-    
+     
     // PUT /post/0/
     @PutMapping("{id}")
     @ResponseStatus(HttpStatus.ACCEPTED)
