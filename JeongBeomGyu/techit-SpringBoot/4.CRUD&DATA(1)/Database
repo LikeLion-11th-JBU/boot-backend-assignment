@@ -1,0 +1,42 @@
+관계형 데이터베이스와 ERD
+codd의 12규칙(전부 다 따르지는 않는다.)을 따르고자 하는 Database -> 관계형 데이터베이스이다
+관계형 데이터베이스 - table의 형태로 데이터를 저장, 관계형 연산자(집합 연산자 - 교집합, 합집합, 차집합으로 계산을 해서 그 데이터를 테이블 형태로 반환을 할 수 있는 데이터베이스가 관계형 데이터베이스이다.) 로 테이블 형태로 데이터를 반환한다. 데이터를 조회하는데 특화가 되어있는 프로그램들이다. 행에는 데이터의 위치(뜻이 무엇인지, 역할이 무엇인지를 나타내는 부분)에 따라서 무엇을 담고 있는지가 명벽하게 들어난다.->col (예를 들어 햄버거나, 치킨, 피자등), 열에는 데이터 하나 Row을 Ntt라고 부른다.-> Row ( 예를 들어 햄버거의 id나 가격, count같은 것 )
+관계형 데이터베이스에서 집고 넘어가야할 것은 Primary Key인데, 하나의 Row를 ntt라고 부르고, 이 ntt라고 부르는 것들은 비슷한 데이터가 들어있을 수 도 있고, 안들어 있을 수 도 있다. 즉, Primary Key는 하나의 table 내에서 하나의 id값이 있다면 분명하게 하나의 ntt(하나의 Row)를 가져올 수 있는 명백한 값을 의미한다라고 볼 수 있다. 그렇기 떄문에 Primary Key가 있냐 없냐에 따라서 Database의 성능의 차이가 매우 크게 작동한다. JPA를 사용하면 대부분 프레임워크가 대신 해준다.
+ERD - order item, order같은 각각이 table(Entity)을 의미하고 있고, 이런 table들이 줄들로 연결되어 있는데 이것이 Entity -Relationship Diagram으로 Entity와 Entity 사이의 관계, 서로 어떠한 관계를 가지고 있는지를 나타내기 위한 model이다. 데이터를 표시하기 위한 방법 중 하나이다. 줄(관계)을 어떠한 식으로 이루어져있는지 다양하게 정의할 수 있다. 예를 들어서 order 테이블에 user_id가 user 테이블의 id와 연결되어 있을 때 user_id는 id와 동일한 값을 갖는다. 즉, user_id에 존재하지 않더라도 id에 존재할 수 있지만, user_id에 있는 값이 id쪽에 존재하지 않으면 문제가 될 수 도 있다. 주문(order)을 어떠한 사용자 혹은 손님(user)이 주문을 한다. 그러면 주문에는 사용자의 정보(user_id)가 존재한다. 사용자(user)는 여러개의 주문(order)을 할 수 있다. 즉 user has order 관계로 user는 여러개의 order를 가지고 있다같은 부분들을 줄(관계)을 통해서 표현할 수 있다. 이 관계는 1대 다 관계이다. 사용자가 여러개의 주문을 할 수 있기 때문이다.  
+order, order_item, product 테이블의 관계를 보면 order_item의 order_id는 order 테이블의 id를 가리키고, order_id의 product_id는 product(상품) 테이블의 id를 가리킨다. 이것같은 경우 order테이블의 id 하나에 대해서 여러개의 order_item 테이블의 product_id가 들어갈 수 있다. 또한 product 테이블의 id가 하나라도 해도 product 테이블의 id에  order_item 테이블의 order_id는 여러개 들어갈 수 있다. 즉 주문(order)에는 다양한 상품(product_id)이 들어 갈 수 있고, 상품(product)은 다양한 주문(order_id)에 포함되어 있을 수 있다. 이러한 관계를 다대다 관계라고 한다. 어떠한 상품(product)을 하나의 주문(order)에만 소속시킬 수 없다. 이것이 ERD이다. 
+데이터베이스도 일종의 서버로서 작동을 하고 그 서버에 접근하기 위한 클라이언트를 필요로 한다. - mysql
+workbench가 무엇인지 -  docker로 설치를 했던것 -> "관계형 데이터베이스 서버"( "서버 소프트웨어"(들어올 수 있는 요청을 들을 수 있다. -> 어떤 컴퓨터에 들어가서 실행되는 소프트웨어 ) + "물리 서버"(물리적으로 단독 서버로 운영 -> 데이터 안전을 위해서, 데이터를 잃어버리면 서비스 자체가 없어지는 것과 같기 때문에))  <-> 서버에 접근을 해서 거기에 다가 자신이 원하는 것을 요청을 하기 위한 클라이언트 프로그램 이 "mysql"의 workbench이다.
+관계형 데이터베이스 서버와 mysql은 세트가 아니다. 서버는 서버고 클라이언트는 클라이언트이다. 즉, 지금 설치한 서버 뿐만 아니라 mysql 과 다른 관계형데이터 베이스 서버를 위해서라면은 mysql workbench를 통해서 접근할 수 있다. 물론, 다른 회사에서 만든 database에는 접근하기 힘들다. 
+mysql에서 schema라는 단위는 데이터베이스라고 부르기도하는데, 이 schema안에다가 사용할 table같은 정보들을 격리시켜놓는다. 즉, 서로서로 schema들 끼리 하나의 schema에서 하나의 service에 대한 table을 모아놓을 수 있도록 새 schema를 만들어 준다. 
+root 계정에서는 모든 schema들이 보인다. 
+add Account를 한다음 schema에 해당 demo_schema를 추가(add entry)하면 이 schema는 이 유저 전용 schema이다. 그러므로 해당 schema의 모든권한을 줘도 된다.
+select 1 from daul; 에서 dual은 table의 위치에 들어가야 되는데 null table이 없을 때 사용. 1은 DB에다가 1을 돌려달라는 요청을 보낸 것이다. 
+table이 데이터를 넣는 곳이다. create table을 한 다음 name에 post를 쓰면 자동으로 pk(primary key)와 nn(notnull)이 추가된다. 또한 AI (auto Increment -> 자동으로 데이터가 하나 추가될 때 id값이 1 올라간다.)
+mysql demo_user의 query에
+insert into post(title, content, writer)  -> 무엇을 할 것인지 선언을 한다. 쿼리 문자이다.
+values('Hello MySQL!', 'This is my first post.', 'aquashdw')  -> 무엇을 할 것인지에 따라서 뒤의 문구가 어떻게 되는지 조금씩 바뀐다. 
+을 쓴다. 
+
+insert into post(title, content, writer) 
+values('Hello MySQL!', 'This is my first post.', 'aquashdw');
+
+select * from post;
+
+insert into post(title, content, writer)
+value('Hello RDB', 'I\' using SQL!', 'aquashdw'); -> create 부분
+
+select * from post; -> 는 다른 열 만들기 (만약 하나의 열만 가지고 오고 싶으면 select * from post where id =1을 하면 1번째 열만 출력된다. 또한 where id 위치에 writer = 'aquashdw'나 like = 'aqua%'를 쓸 수 있다. ) ->read부분
+update post set title = 'Hello Update!' where id =2; -> 는 2번째 id 열을 업데이트 하는 것이다. 
+select * from post where id =2; -> 는 2번째 id 열을 가져오는 명령어
+delete from post where id = 2;  -> 는 2번째 id 열을 지우는 명령어이다.  
+
+inner join 을 통해서 다양한 조회결과를 얻을 수 있다.
+truncate post; 는 table이 한번도 사용된적없는 상태로 되돌리는것이다. -> delete랑은 다르다 . delete를 할 때는 id가 초기화가 되지않는다. 즉 1,2,3의 id중 2,3을 지우고 다시한번 열을 출력했을때 열의 id는 4가된다. 하지만 truncate post 를 사용하면 데이터가 다 날라가서 id와 같은 기록들도 다 초기화가 되어서 다시한번 열을 출력해도 id 는 1부터 시작한다. 
+만약에 post에 행에 board라는 것을 추가하려면 
+insert into board(name) values('general');
+insert into post(title, content, writer, board) 
+values('Hello MySQL!', 'This is my first post.', 'aquashdw', '1');
+을 하면 된다.
+만약 게시글 1에 작성되어진 모든 글을 보고 싶다고 할때는 
+select * from board inner join post b on a.id = b.board; 을 사용하면 된다.
+select * from board left outer join post b on a.id = b.board; -> 는 왼쪽에 있는 board 테이블에 있는 데이터를 기준으로 오른쪽의 post table과 연결을 해줘야한다. 

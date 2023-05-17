@@ -1,0 +1,15 @@
+IoC Container가 만들어놓은 코드에서 Bean을 검색해서, 필요한 순간순간에 제공하는 것 -> Spring 프레임워크의 핵심적인 기능 중 하나이다.
+Beans를 함수단위로 정의할 수 도 있고, class 단위로 정의할 수 도 있다. 그 중에서 클래스 단위로 정의하기 위한 것들이 구현되어 있는 패키지 이름이 Spring 프레임워크 Strereotype 패키지이다. 여기 있는 클래스들, 인터페이스들을 살펴볼 것이다.
+Spring 프레임워크 Strereotype 패키지에 있는 클래스, 인터페이스 - Component, service, Ropository등이 있다.
+@SpringBootApplication -> 스프링 부트 어플리케이션이다라는 것을 나타내기 위한 어노테이션 인터페이스 이다. -> 이게 붙으면 main 클래스가 스프링부트 어플리케이션으로 실행이 된다.
+@ComponentScan과 @Configuration이라는 어노테이션을 같이 사용하게 된다면 프로젝트를 구성하고 있는 자바 패키지들 중 어떤 패키지들을 확인을 해서 그것들을 IoC Container에 등록을 할 것인지에 대한 것을 정의하기 위해 사용하는 어노테이션이다. 하지만 실제로는 많이 사용 x
+@ComponentScan 은 패키지를 검색을 하도록 지정해주는 것이다.  -> 이 패키지 안에 있는 @RestContoller 또는 @Controller 또는 이것들 위에 @Component라는 어노테이션(Stereotpye에 정의되어 있는 어노테이션 -> 가장 기본적인 어노테이션 -> Controller가 Component의 일종이다. 그렇기 때문에 Controller는 Component이다. 또한 Component에는 Controller 뿐만 아니라 service,Repository등이 존재하고 있다.). 즉, 이 Component라는 것이 붙어있는 Controller, service, Repository이 붙어있는 클래스들을 검색해서 그것들을 Spring Container에 등록을 해준다.
+@Controller가 RequestMapping을 하기위해 사용되는 어노테이션이다. -> 어플리케이션의 가장 바깥쪽에 위치하는 부분이다. 그렇기 때문에 이것이 다른 클래스를 사용하지 않도 다른 클래스가 이것을 사용하지도 않는다.
+어떤 자원이 어플리케이션에서 어떠한 역할을 하는지 정확하게 모르겠지만 Spring Ioc Container의 관리하에 두고 싶으면-> Component를 사용한다. 
+요청 엔드포인트를 만들고 싶으면 -> Controller 인터페이스를 사용하면 된다.
+즉 Spring IoC Container에서는 ComponentScan을 이용해 사용할 Bean의 범위를 정해줄 수 있다. -> 이때 함수의 결과(반환값)를 Bean으로서 활용을 하는 Bean 어노테이션(@Bean)이 있고, Class 단위를 설정하는 Component어노테이션(@Component)이 있다. -> 이것 둘을 사용하여 함수 혹은 클래스에 붙여주면 Spring Container가 그것을 어플리케이션을 실행하고 사용하는데 있어서 활용할 수 있게끔 적용이 된다.
+Controller, Repository, Service 등은 Component에서 탄생한 부수적인 것들이다. Controller에서 어플리케이션을 만들면서 굳이 Repository나 Service를 사용할 필요는 없다. -> 다 Component로 만들어도 작동은 한다. 왜냐하면 모든 Bean에 Component를 사용해도 작동하기는 한다.(모든 Bean은 결과적으로 Class 단위의 Bean은 전부 Component이기 때문이다.)
+Component의 Controller는 RequestMapping과 함께 사용되면서 MVC의 Controller 역할(사용자의 인터페이스 부분)을 함을 알린다.
+Component의 Repository는 Data Access Object(DAO)와 같이 실제 데이터 근원과 소통하는 부분임을 알린다.(그게 꼭 관계형 데이터베이스가 아니더라도, 데이터를 회수하고, 주고받고 하는 부분에 있는 애들한테 붙여주는 역할이다.)
+Component의 Service는 비즈니스 로직이 구현된 부분임을 알린다.
+Component는 단순히 Bean만이 아니라 Controller나 RestContoller로 어노테이션 되어있는 클래스의 함수들의 @RequestBody 안에 HttpServletRequest request들을 넣을 수도 있다. -> 이것은 실제로 자바상에서 구현되어 있는 Http 인터페이스로 자바에서 사용하는 http 요청에 형식은 이 함수들을 구현한 형태로 들어와야한다는 것을 인자로 넣어주는 것이다. -> 그러면 앞쪽에 붙어있는 tomcat등의 구현체에서 만들어 놓은 요청이 HttpServletRequest까지 들어온다. 또한 그 내용도 request.getHeader("Content-Type")으로 확인할 수 있다. 즉 어떠한 클래스에 필요한 다른 클래스의 인자를 가져오거나 ( PostRestController 클래스에서 @AutoWired를 사용해서 PostService라는 다른 클래스의 인자를 postService 변수에 받아올 수 있다. ), 또는 함수에 필요한 인자들을 프레임워크가 알아서 제공을 해주는 프레임워크가 스프링 프레임워크이다.  
