@@ -1,0 +1,365 @@
+1. 게시판에 대한 CRUD
+1-1.controller라는 패키지를 만든다음 게시판에 대한 Controller를 만든다. -> BoardController
+이 Controller를의 RepuestMapping("board")라고 한다. 그리고 위에다가는 RestContoller 어노테이션을 붙인다.
+
+1-2. model이라는 패키지를 만든 다음 게시판에 대한 BoardDto를 만든다. 이 Dto에 실제로 게시판에 대한 정보가 담기게 될 것이다. 
+
+1-3. Repository라는 패키지를 만든 다음 데이터와 관련된 인터페이스들을 넣는다. 우선 게시판의 데이터와 관련된 BoardRepository 인터페이스를 만든다.
+
+1-4. 우선 게시판에 대한 정보를 담고 있는 BoardDto를 작성한다.
+미션 조건에 따라서 
+BoardDto는 이름에 대한 정보를 가지고 있어야한다. -> private String name;
+관계형 데이터 베이스에 PrimaryKey와 같은 정보를 데이터에 포함을 해야한다. -> Dto 자체에서 의미가 있는 값은 아니지만, 처음에 create 작업을 진행을 하고 나서, 다시 read를 하기 위해서 이게 몇번째 id인지를 확인하기 위해서, 어떤 실제 데이터를 만들었는지를 보여주는 용도로 id를 추가한다.
+-> private Long id;
+그 다음 빈생성자와 생성자, Getter와 Setter, toString을 만들어 준다.
+
+1-5. BoardRepository에서 실제로 만들게 될 작업(BoardDto의 CRUD)들을 정의한다.
+BoardDto create(BoardDto dto);
+    BoardDto read(Long id);
+    Collection<BoardDto> readAll();       -> Collection 대신에 List를 사용할 수도 있다. 
+    boolean update(Long id, BoardDto dto);      
+    boolean delete(Long id);    -> 반환값으로 boolean을 요구하는 이유는 update와 delete는 새로운 것을 만드는 것이 아니라, 원래 있던 것을 조작하는 용도이기 때문에 boolean으로 실제 정상적으로 작동을 했는지를 확인하기 위해서 boolean으로 작성을 한것이다.
+
+1-6. BoardController에 가장 기본적은 CRUD 총 다섯 종류(read와 readAll까지 포함해서)를 BoardRepository에서 가져온 다음 해당 종류들에 대한 함수(기능, 메소드)를 정의해준다.
+private static final Logger logger = LoggerFactory.getLogger(BoardController.class);  -> logger를 선언한 다음
+    private final BoardRepository boardRepository;          -> 데이터를 주고 받는 Repository 인터페이스를 멤버변수로 선언해놓고
+    public BoardController(                                 -> Spring을 이용해서 BoardController에 주입을 시켜준다.
+            @Autowired BoardRepository boardRepository      -> 생성자를 통해 BoardController에 BoardRepository를 가져온다.
+    ){
+        this.boardRepository = boardRepository;
+    }
+-> 이렇게 해당 종류들을 가져온 다음 그 종류에 대한 함수를 정의해준다.
+
+creart에 대한 함수 정의 -> RestContoller 어노테이션이 붙어있기 때문에 ResponseBody 어노테이션이 붙을 필요가 없다.
+대신에 ResposneEntity를 사용한다. ResponseEntity는 응답을 보내는데 있어서 좀 더 여러가지 HTTP 응답을 만들 수 있는 다양한 기능들을 가지고 있다. 그렇기 때문에 ResponseEntity에는 ok등 여러가지 함수들이 정의되어 있다. ".ok"는 body를 넣어줄 수 있고, ".status"로 Status 코드를 직접 넣어줄 수 있다. (400 notFound 등에 대한 코드들). 즉 ResponseEntity는 응답을 더 잘 조작해서 보내고 싶을 때 사용한다.  
+@PostMapping
+    public ResponseEntity<BoardDto> createBoard(@RequestBody BoardDto dto){
+        return ResponseEntity.ok(boardRepository.create(dto));
+    }
+
+read에 대한 함수 정의
+@GetMapping("{id}")     -> id를 가진 ResponseEntity를 생성해준다.
+    public ResponseEntity<BoardDto> readBoard(@PathVariable("id") Long id){
+        BoardDto dto = boardRepository.read(id);
+        return ResponseEntity.ok(dto);
+    }
+    
+    @GetMapping
+    public ResponseEntity<Collection<BoardDto>> readBoardAll(){     
+        return ResponseEntity.ok(this.boardRepository.readAll());                            -> readAll 이기 때문에 특정한 id가 필요없고 반환값이 여러개이므로 Colletion(또는 List) 사용
+    }
+
+update에 대한 함수 정의
+@PutMapping("{id}")
+    public ResponseEntity<?> updateBoard(@PathVariable("id") Long id, @RequestBody BoardDto dto){
+        if(!boardRepository.update(id, dto)) return ResponseEntity.notFound().build(); ->결과가 정상적이지 않을 때 fall가 반환이 될 때 작동하지 않도록, 성공했다고 뜨지 않도록 설정한다. 
+        return ResponseEntity.noContent().build();  -> 위와 동일한 설정이다.
+    }
+
+delete에 대한 함수 정의 -> update와 거의 유사하다.
+@DeleteMapping("{id}")
+    public ResponseEntity<?> deleteBoard(@PathVariable("id") Long id){
+        if(!boardRepository.delete(id)) return ResponseEntity.notFound().build();
+        return ResponseEntity.noContent().build();
+    }
+
+1-7. 실제로 Board의 데이터를 저장하는 부분을 Repository패키지에서 InMemoryBoardRepository클래스를 만든다. -> BoardRepository 구현체를 만들것이다.
+InMemoryBoardRepository 클래스는 implements로 BoardRepository를 하고, 해당 클래스 위에 @Repository를 붙여준다.
+나중에 Jpa나 mybatis를 하게 된다면 결과적으로, 이런 Repository 또는 Dao 클래스를 사용해서 데이터와 주고 받는 역할할 것이다. 그리고 InMemoryBoardRepository은 데이터를 DB에 저장하는 것이 아니라 내가 들고 있는 데이터이다. 
+@Repository
+public class InMemoryBoardRepository implements BoardRepository{
+    private Long lastIndex = 0L;    -> 이것은 primary key를 관리하기 위해서 마치 MySQL에 Autoincrement를 구현하기 위해서 변수로서 들고 있는것
+    private final Map<Long, BoardDto> memory = new HashMap<>(); -> 여기는 실제로 데이터를 들고 있을 부분이다. BoardDto도 id를 가지고 있고, 조회의 편의성을 위해서 id를 Long을 통해서 id에 key를 부여해줄 것이다.
+
+create에 대해서 가져오기
+@Override
+    public BoardDto create(BoardDto dto) {
+        lastIndex ++;   -> 위에 lastIndex가 0L 즉, 0부터 시작하니까 1로 만드는 것이고,
+        dto.setId(lastIndex);
+        memory.put(lastIndex, dto);
+        return memory.get(lastIndex);   -> memory에서 lastIndex를 돌려준다. (BoardController의 create에)
+    }
+
+read에 대해서 가져오기
+@Override
+    public BoardDto read(Long id) {
+        return memory.getOrDefault(id, null);   -> memory에서 get을 이용해서 null값을 돌려준다. (BoardController의 read에) -> null값을 돌려주면 null 포인트에 대한 exception이 발생할 수 있으므로 Controller의 read에서 해당 exception에 대한 처리를 해준다.
+    }
+
+     => BoardController에 다가 if(dto == null){
+           return ResponseEntity.notFound().build();
+        }을 추가해준다. 그러면 dto가 null일때 notFound라는 Http 상태코드를 반환한다.
+
+readAll -> 은 값이 없다고 해도 문제가 될 것이 없다. id에 null이 들어가지 않기 때문이다.
+@Override
+    public Collection<BoardDto> readAll() {
+        return memory.values();   -> values는 요청을 주고받으면서 데이터를 조작하기 시작하면 실제 데이터가 바뀌기 시작한다.
+    }
+
+update에 대해서 가져오기
+@Override
+    public boolean update(Long id, BoardDto dto) {
+        if(memory.containsKey(id)){   -> 이 가정 중에서 runtime exception이 발생하면 true를 반환할 수가 없다. 또한 메모리가 포함한 키값이 없어도 true를 반환하지 않는다. 
+            dto.setId(id);
+            memory.put(id, dto);
+            return true;
+        }
+        return false;
+    }
+
+delete에 대해서 가져오기 
+@Override
+    public boolean delete(Long id) {
+        if(memory.containsKey(id)){
+            memory.remove(id);
+            return true;
+        }
+        return false;
+    }
+-> 이렇게 하면 Board부분은 끝이 났다.
+
+2. 게시글에 대한 CRUD
+2-1. 실제 게시글에 대한 정보를 담고 있는 PostDto클래스를 model 패키지에 추가한다.
+PostDto에는 여러가지 정보들을 추가할 것이다.
+    private Long id;
+    private String title;
+    private String content;
+    private String writer;
+    private String password;    
+    private Long BoardId;  
+그 다음 빈 생성자, 생성자, Gettet와 Setter, toString을 추가한다. -> 간단한 PostDto를 생성했다.
+변수가 6개만 되어도 내용이 엄청길다. 그래서 Getter와 Setter, 생성자 같은 것을 작성할 필요없게끔, 어노테이션 기반의 Lombok 라이브러리를 사용할 수 있다. 또한 기본적으로 모델 클래스(PostDto나 BoardDto같이 데이터를 담고 있는 클래스)에 변수가 7개가 넘어가면 그 변수의 디자인이 조금 복잡하게 된것이다. -> 더 나은 방법을 찾아봐야한다.(변수 인자 7개가 기준)
+
+2-2. PostRepository에서 실제로 만들게 될 작업(BoardDto의 CRUD)들을 정의하기 위해서 Repository 패키지에 PostRepository 인터페이스를 추가한다.
+-> BoardRepository와 비슷하지만 인자들이 조금더 많다. 왜냐하면 어떤 Board인지 같은 부분들이 조정이 되어야 되기 때문이다.
+PostDto crete(Long boardId, PostDto dto);     -> 어떤 boardId 인지 같은 인자들이 추가
+    PostDto read(Long boardId, Long postId);
+    Collection<PostDto> readAll(Long boardId);
+    boolean update(Long boardId, Long postId, PostDto dto);
+    boolean delete(Long boardId, Long postId, String password);
+
+
+2-3. 게시글에 대한 PostController 클래스를 controller 패키지에 추가한다.
+PostController 클래스에 다가 RestContoller 어노테이션을 붙여준다. 또한 RequestMapping에다가 board/{boardId}/post를 붙여준다. -> 이렇게 작성하면 PostController 안에있는 모든 ControllerMapping이 board/{boardId}이 구조를 따라야지 작동을 하게된다. -> 이렇게 작성하는 이유는 조건에 RestAPI와 URL의 구조에서 Post와 Board의 관계가 요청하는 URL상에 나타나야기 때문이다.(Post는 Board에 속해있는 데이터이다.)즉 board/{boardId}/post는 board에 있는 어떠한 특정한 자원인 {boardId}의 아래에 있는 post를 찾는다라는 의미를 가진다. 즉, {boardId}라는 board에 있는 post를 가지고 온다라는 의미로 사용된다.
+@RestController
+@RequestMapping("board/{boardId}/post")
+public class PostController {
+  private static final Logger logger = LoggerFactory.getLogger(PostController.class);
+}
+
+
+; 만약에 @RequestMapping("post")
+; public class PostController {
+;     public ResponseEntity<CollectionReadOnlyAccess<PostDto>> readPostAll(
+;             @PathVariable("boardId") Long boardId
+;     ){}}
+; 이런 꼴이였다면 @PathVariable로 boardId를 받아왔고, 이렇게 되면 어떠한 특정한 board(boardId)에 속해 있는 post들을 다 가지고 오는 요청이다.
+
+그 다음 빈생성자를 만든다.
+
+create에 대한 함수를 정의한다.
+@PostMapping
+    public ResponseEntity<PostDto> createPost(@PathVariable("boardId") Long boardId){ -> 어떤 Board에 들어갈지를 가져오기 위해서 Url의 BoardId를 가져온다.
+        PostDto result = null; -> PostDto에 대한 결과를 받아야지 id를 돌려줄 수 있다.또한 이 게시판이 어떤 Board에 들어갈지도 같이 들어가야한다.
+
+    }
+
+read에 대한 함수를 정의한다.
+
+@GetMapping("{postId}")     -> PostId를 가져오기 위해서 PathVariable을 두번써준다.
+    public ResponseEntity<PostDto> readPost(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("postId") Long postId
+    ){
+        return null;
+    }
+
+readAll에 대한 함수를 정의한다.
+@GetMapping
+public ResponseEntity<Collection<PostDto>> readPostAll(
+            @PathVariable("boardId") Long boardId
+    ){
+        return null;
+    }
+
+update에 대한 함수를 정의한다.
+@PutMapping("{postId}")
+public ResponseEntity<?> updatePost(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("postId") Long PostId,
+            @RequestBody PostDto dto      -> update를 하기위한 Dto를 전달을 하기 때문에, 그 Dto의 password 파라미터를 사용할 수 있다.
+    ){
+        return null;
+    }
+
+delete에 대한 함수를 정의한다.
+@DeleteMapping("{postId}")
+    public ResponseEntity<?> deletePost(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("postId") Long PostId,
+            @RequestParam("password") String password -> passoword를 RequestParam로 받아오게 했다. delete같은 경우 Dto를 전달하지 않기 때문에 password를 RequestParam을 통해서 추가해준다.
+    ){
+        return null;
+    }
+
+2-4. BoardRepository와 마찬가지로 실제로 Post의 데이터를 저장하는 부분을 Repository패키지에서 InMemoryPostRepository클래스를 만든다. -> PostRepository 구현체를 만들것이다.
+InMemoryPostRepository 클래스에 @Repository 어노테이션을 붙여주고 PostRepository를 implements한다.
+또한 InMemoryBoardRepository와 유사하게 작성을 해준다. 여기에서 하나가 더 추가 될 것인데, BoardRepository가 이 InMemoryPostRepository에 들어가야한다. 왜냐하면 Board를 서로 확인을 하고 사용을 해야하는 시점이 있을 수 있기 때문이다. 그렇기 때문에 Autowired 어노테이션을 사용해서 BoardRepository를 가져온다.
+@Repository
+public class InMemoryPostRepository implements PostRepository{
+    private final BoardRepository boardRepository;
+    private Long lastIndex = 0L;
+    private final Map<Long, PostDto> memory = new HashMap<>();
+
+    public InMemoryPostRepository(
+            @Autowired BoardRepository boardRepository
+    ) {
+        this.boardRepository = boardRepository;
+    }
+
+create 부분 가져오기 -> BoardRepository와는 다르게 실제로 boardId를 가져왔기 때문에 boardId가 실존을 하는지 return에 검증하는 부분이 항상 들어가야한다.  
+    @Override
+    public PostDto crete(Long boardId, PostDto dto) {
+        BoardDto boardDto = this.boardRepository.read(boardId);->만약에 boardId가 없는 board였다고 하면 작성이 불가능해야함으로, 그것에 대한 검증을 해줘야한다. 이때 read함수는 Board가 존재하지 않을 때는 null을 보내주게 만들어져있다. 그래서 만약 boardDto가 null이면 null을 돌려주는 if문을 사용해야한다.
+        if(boardDto == null){
+            return null;
+        }
+        dto.setBoardId(boardId);-> 어떤 특정한 boardId에 들어가야함으로 BoardRepository와 다르게 이 부분이 추가된다. 즉 위에서 null을 돌려주면 오류가 난다.
+        lastIndex ++;
+        dto.setId(lastIndex);
+        memory.put(lastIndex, dto);
+        return dto;
+    }
+
+read부분 가져오기 
+@Override
+    public PostDto read(Long boardId, Long postId) {
+        PostDto postDto = memory.getOrDefault(postId, null);
+        if (postDto == null){
+            return null;
+        } else if (!Objects.equals(postDto.getBoardId(), boardId)) {  -> 요청한 boardId에 있는 PostDto인지 검증하는 과정이 추가된다.
+            return null;          -> 아니면 null을 보내준다. 이런것들이 ReadAll에도 들어간다.
+        }
+        return PostDto;
+    }
+
+readAll 부분 가져오기
+@Override
+    public Collection<PostDto> readAll(Long boardId) {
+        if (boardRepository.read(boardId) == null)return null;  -> Board가 존재하는 지를 검증하는 것 
+        Collection<PostDto> postList = new ArrayList<>();   -> 이렇게 postList에 ArrayList를 할당한 순간 부터 postList는 null은 아니다.(그냥 빈 collection이다.)
+        memory.forEach((postId, postDto) -> {       -> memory에 존재하는 postId(키)와 postDto(값=value)을 받아와서, 키와 값을 각각 무언가 작업을 하기 위해서 if함수를 제공해 주었다. -> 즉 키와 값을 받으면 이것에 대해서 무슨 작업(if)을 할지에 대한 것을 제공
+            if(Objects.equals(postDto.getBoardId(), boardId))
+                postList.add(postDto);
+        });                       -> memory.forEach가 아무런 Post를 들고 있지 않다고 해도 postList는 null이 아닐 것이다.
+        return postList;
+    }
+
+update 부분 가져오기
+ @Override
+    public boolean update(Long boardId, Long postId, PostDto dto) {
+        PostDto targetPost = memory.getOrDefault(postId, null);
+        if (targetPost == null){      -> targetPost가 null 이라면 false로 없다는 것을 알려준다.
+            return false;
+        } else if (!Objects.equals(targetPost.getBoardId(), boardId)) {
+            return false;             -> 요청한 boardId에 있는 targetPost인지 검증하는 과정(어떤 Board에 들어가 있는지에 대한 검증)
+        }
+        else if(!Objects.equals(targetPost.getPassword(), dto.getPassword())){
+            return false;             -> targetpost의 password가 dto의 password와 다른지를 검증하는 과정(password가 다른 경우에 대한 검증)
+        }
+        targetPost.setTitle(
+                dto.getTitle() == null ? targetPost.getTitle() : dto.getTitle()); ->dto의 title이 null일 때만 title을 수정
+        targetPost.setContent(
+                dto.getContent() == null ? targetPost.getContent() : dto.getContent()); -> dto의 content가 null일 때만 content를 수정
+                                                                  -> map에 있는 object를 받아와서 수정을 해주면 바로 반영이 된다. 
+        return true;
+    }
+
+delete 부분 가져오기
+@Override
+    public boolean delete(Long boardId, Long postId, String password) {
+        PostDto targetPost = memory.getOrDefault(postId, null);
+        if (targetPost == null){
+            return false;
+        } else if (!Objects.equals(targetPost.getBoardId(), boardId)) {
+            return false;
+        }
+        else if(!Objects.equals(targetPost.getPassword(), password)){ -> 이 부분만 passwd가 String 문자열로 받아온다.(update와 다른 부분)
+            return false;
+        }
+        memory.remove(postId);    -> 잘도었으면 키를 제거한다.
+        return true;
+
+2-5. PostController에 PostRepository를 가지고 온다. (왜냐하면 PostRepository의 구현체가 InMemoryPostRepository이기 때문이다.)
+   private final PostRepository postRepository;
+    public PostController(@Autowired PostRepository postRepository){
+        this.postRepository = postRepository;
+    }
+
+create 부분 수정
+@PostMapping
+    public ResponseEntity<PostDto> createPost(
+            @PathVariable("boardId") Long boardId,
+            @RequestBody PostDto dto
+    ){
+        PostDto result = this.postRepository.create(boardId, dto);
+        return ResponseEntity.ok(result);   -> 이렇게 되면 PostDto안에 들어가있는 Password가 항상 공개된 채로 나오게 된다. 이 password를 감추기위해서 PostDto에 똑같은 객체를 만드는 함수를 추가한다.
+    }
+
+즉 PostDto에 
+    public PostDto passwordMasked(){
+        return new PostDto(
+                this.id,
+                this.title,
+                this.content,
+                this.writer,
+                "******", -> password를 *******로 설정
+                this.boardId
+        );
+을 추가하면 return ResponseEntity.ok(result); 에서 result.passwordMasked를 사용할 수 있고, 실제 dto를 건들이지 않고, 그것의 표현개체를 하나 받아올 수 있다. 똑같은 객체 즉, 값들은 똑같은데 password만 다른
+
+read부분 수정
+@GetMapping("{postId}")
+    public ResponseEntity<PostDto> readPost(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("postId") Long postId
+    ){
+        PostDto postDto = this.postRepository.read(boardId, postId);
+        if (postDto == null) return ResponseEntity.notFound().build();
+        else return ResponseEntity.ok(postDto.passwordMasked());
+    }
+
+read -all 부분 수정
+    @GetMapping
+    public ResponseEntity<Collection<PostDto>> readPostAll(
+            @PathVariable("boardId") Long boardId
+    ){
+        Collection<PostDto> postList = this.postRepository.readAll(boardId);
+        if (postList == null) return ResponseEntity.notFound().build();
+        else return ResponseEntity.ok(postList);
+    }
+
+update 부분 수정
+ @PutMapping("{postId}")
+    public ResponseEntity<?> updatePost(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("postId") Long PostId,
+            @RequestBody PostDto dto
+    ){
+        if (!postRepository.update(boardId, PostId, dto))
+            return ResponseEntity.notFound().build();
+        return ResponseEntity.noContent().build();    -> update 된 내용은 nocontent로 돌려준다.
+    }
+
+delete부분 수정
+@DeleteMapping("{postId}")
+    public ResponseEntity<?> deletePost(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("postId") Long PostId,
+            @RequestParam("password") String password
+    ){
+        if (!postRepository.delete(boardId, PostId, password))
+            return ResponseEntity.notFound().build();
+        return ResponseEntity.noContent().build();
+    }
+-> 이렇게 하면 1차적으로 게시판, 게시글 만드는 부분은 완료되었다. 

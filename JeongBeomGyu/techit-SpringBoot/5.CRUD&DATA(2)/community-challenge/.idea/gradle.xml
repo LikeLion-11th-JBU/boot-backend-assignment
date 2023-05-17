@@ -4,12 +4,14 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
+        <option name="delegatedBuild" value="false" />
+        <option name="testRunner" value="PLATFORM" />
         <option name="distributionType" value="DEFAULT_WRAPPED" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$/jpa" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$/community" />
         <option name="gradleJvm" value="#JAVA_HOME" />
         <option name="modules">
           <set>
-            <option value="$PROJECT_DIR$/jpa" />
+            <option value="$PROJECT_DIR$/community" />
           </set>
         </option>
       </GradleProjectSettings>
