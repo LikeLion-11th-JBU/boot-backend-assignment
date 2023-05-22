@@ -155,6 +155,72 @@ public class InterceptorConfig implements WebMvcConfigurer {
 ※ 스프링 밖에서 할 수 있는 일, 안에서 할 수 있는 일/ 반대로 못하는일을 생각 해봐야한다고 함.
 
 -----
-# Spring Boot Tests
+## Spring Boot Tests
 
+* 산출물의 기능적 측면의 테스트 / 시운전 해본다!
+
+* Controller -> Service -> Repository 요청을 보냄.
+
+* 개별 코드 단위의 테스트 -> unit test / integration test
+
+* unit test -> 코드 각각 하나 잘 작동하는지 점검
+* integration test -> clas들이 잘 상호작용하고 잘 작동하는지 확인.
+
+## Testing 의존성
+
+테스트를 위한 라이브러리는 `spring-boot-starter-test` 에 준비가 되어 있습니다. 이는 Spring Initializr를 사용한다면 자동으로 추가되어 있습니다.
+
+```groovy
+testImplementation 'org.springframework.boot:spring-boot-starter-test'
+```
+
+다만 현재 `spring-boot-starter-test` 에는 JUnit5를 기본으로 사용하고 있습니다. 아직 많은 곳에서 JUnit4를 사용하고 있는 만큼, 저희도 우선 JUnit4 부터 시작하겠습니다.
+
+```groovy
+testImplementation 'org.springframework.boot:spring-boot-starter-test'
+testImplementation ('org.junit.vintage:junit-vintage-engine') {
+	exclude group: 'org.hamcrest', module: 'hamcrest-core'
+}
+```
+
+`junit-vintage-engine` 은 JUnit 4 버전을 사용하기 위한 의존ㅌ성입니다. 여기에 `hamcrest` 는 `spring-boot-starter-test` 에 중복으로 들어가있기 때문에 exclude 합니다. 이렇게 구성하면 Test를 위한 라이브러리는 
+
+- JUnit: 사실상의(de-facto) Java 어플리케이션 Testing 표준 라이브러리
+- Spring Test: Spring 어플리케이션 Test 지원 라이브러리
+- AssertJ: 가독성 높은 Test 작성을 위한 라이브러리
+- Hamcrest: Test 진행시 제약사항 설정을 위한 라이브러리
+- Mockito: Test용 Mock 라이브러리
+- JSONassert: JSON용 Assertion 라이브러리
+- JsonPath: JSON 데이터 확인용 라이브러리
+
+* 간단하게 스프링부트에 적용하는 방법 설명할 예정.
+
+* test단계
+* `given` -> 어떤 데이터가 준비가 되어있다
+* `when` -> 어떤 행위가 일어났을 때 (함수 호출 등)
+* `then` -> 어떤 결과가 올 것인지
+
+## TDD(Test Driven Development) : 테스트 주도 개발 / 실제 작동하는 코드 이전에 통과해야 할 테스트를 우선 만드는 개발 방식
+
+* 1. 실패할 테스트 작성(RED) -> 2. 테스트를 통과하는 코드 작성(Green) -> 3. 작성된 코드 수정(Blue) -> 다시 1. 실패할 테스트 작성(RED)
+* 이 3단계가 순환함.
+1. 테스트 작성
+2. 테스트 실행 및 실패
+3. 테스트를 통과하는 코드 작성
+4. 테스트 통과 확인
+5. 코드 정리 (리펙토링)
+
+-----
+## Spring Boot Actuator
+
+* 서비스가 안정적으로 돌아가는데 필요한 기능 - production ready feature 를 제공하기 위한 라이브러리 => Spring Boot Actuator
+
+* 어떤 링크로 갈 수 있는지 = 서비스 디스커버리, Hypermeda as the Engine of Application State
+
+* enabled => actuator가 갖고있는 bean을 실행할지 말지 결정 만약 이게 false로 지정되어있으면 각각 지정해줘야함,
+
+* Prometheus - 세계적으로 많이 사용하는 모니터링 도구
+    * 다양한 계측 정보를 HTTP 요청을 통해 받아온다. => HTTP요청을 받아 줄수 있는 엔드포인트를 Actuator가 제공함.
+    * 계측 정보에 대한 내용을 GUI로 표시하고, 위험한 상황에 대한 알림을 보여준다.
+* Grafana라는 시각화 도구랑 사용을 많이함.
 
