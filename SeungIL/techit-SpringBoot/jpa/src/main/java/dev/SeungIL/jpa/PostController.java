@@ -3,6 +3,7 @@ package dev.SeungIL.jpa;
 import dev.SeungIL.jpa.aspect.LogArguments;
 import dev.SeungIL.jpa.aspect.LogExecutionTime;
 import dev.SeungIL.jpa.aspect.LogResults;
+import dev.SeungIL.jpa.exception.PostNotExistException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,5 +76,10 @@ public class PostController {
     @PostMapping("test-valid")
     public void testValid(@Valid @RequestBody ValidTestDto dto) {
         logger.warn(dto.toString());
+    }
+
+    @GetMapping("test-exception")
+    public void throwException(){
+        throw new PostNotExistException();
     }
 }
