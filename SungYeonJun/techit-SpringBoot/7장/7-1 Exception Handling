@@ -1,0 +1,167 @@
+Exception은 한글로 표현하면 예외라고 부르게 됩니다. 프로그래밍에서 예외라고 부르는 것은 `특수한 처리를 필요로 하는 비정상 또는 예외적 상황` 이라고 보시면 됩니다. 일반적으로 Java를 입문하는 단계에서 가장 자주 맞이하는 Exception은 `NullPointerException` 일 겁니다.
+
+```java
+// a 또는 b가 null일 경우 NullPointerException이 발생
+public void compareLength(String a, String b) {
+		int aLength = a.length();
+		int bLength = b.length();
+		// 이하 생략
+}
+```
+
+Java 언어에서 가장 일반적인 예외처리 방법은 `try` 와 `catch` 를 사용하는 방법입니다. 예외가 발생할 수 있는 구간을 격리시켜, 상황에 맞는 행동을 정의할 수 있습니다.
+
+```java
+public void compareLength(String a, String b) {
+		// try 안쪽의 코드에서 예외가 발생하면
+		try {
+				int aLength = a.length();
+				int bLength = b.length();
+				// 이하 생략
+		// catch에서 지정한 예외가 발생했을 때의 처리법을 정의합니다.
+    } catch (NullPointerException e) {
+				System.out.println("null pointer exception, pass");
+    } finally {
+				// 예외의 발생 여부와 관계없이 항상 실행하는 코드
+		}
+}
+```
+
+함수에서 예외가 발생할 수 있다는 부분을 추가하여, 함수를 호출하는 대상이 직접 그에 대한 처리를 요구할 수도 있습니다. `throws` 키워드를 사용하며, Method Signature의 일부로 취급합니다. 만일 `throws` 키워드가 있는 
+
+```java
+public void compareLength(String a, String b) throws NullPointerException {
+		int aLength = a.length();
+		int bLength = b.length();
+		// 이하 생략
+}
+```
+
+다만 위의 예시는 실제 상황에서는 자주 사용하지 않습니다. 이에 대해서는 `RuntimeException`에 대하여 알아보도록 합시다.
+
+Spring Boot는 전체 어플리케이션에서 발생하는 예외를 다룰 수 있는 방법들을 제공합니다. 강의를 진행하면서 간간히 사용하기도 했던 `ResponseStatusException` 을 비롯하여, 자신이 직접 예외를 정의하고, 해당 예외를 어떻게 처리할지를 정의할 수 있습니다.
+
+## ResponseStatusException
+
+`ResponseStatusException` 은 RuntimeException을 상속받은 Spring의 예외입니다. 기본적으로, 프로그램의 진행 과정에서 발생하지 않았어야 할 일들이 있을 때, `throw new ResponseStatusException()` 을 작성해주면, HTTP Status Code를 설정해서 오류 메시지를 보내줄 수 있습니다.
+
+```java
+public PostEntity readPost(int id) {
+    Optional<PostEntity> postEntity = this.postRepository.findById((long) id);
+    if(postEntity.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+    }
+    return postEntity.get();
+}
+```
+
+JPA 연습시 사용했던 예시입니다. `ResponseStatusException` 은 Spring 5 부터 제공된 `RuntimeException` 입니다. 기본적인 처리 방식이 정의되어 있기 때문에, 빠르게 기능을 구현하고 오류 지점을 파악하는데 용이합니다.
+
+하지만, Application 전체에 예외 처리 규칙을 정의하는 것이 아니고, 다양한 오류상황에 대하여 동일한 `ResponseStatusException`을 사용하기 때문에 중복 코드가 발생하기 쉬우며, 종종 필요한 만큼의 정보를 사용자에게 제공하기 어려울 수 있습니다.
+
+## ExceptionHandler - 컨트롤러 단위 예외 처리
+
+`@ExceptionHandler` 는 `@Controller` 또는 `@RestController` 내부의 함수에 붙일 수 있는 Annotation 입니다. `value` 로서 `Throwable` 을 상속받는 클래스, 다른말로 예외들을 받아줍니다.
+
+```java
+@ExceptionHandler(BaseException.class)
+public ErrorResponseDto handleException(BaseException exception, HttpServletResponse response) {
+    if (exception instanceof InconsistentDataException){
+        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+    }
+    else response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+    return new ErrorResponseDto("@ExceptionHandler within PostController");
+}
+```
+
+`Controller` 내부에 선언된 `@ExceptionHandler` 는 해당 `Controller` 내부에서 발생한 예외들에 대해서 동작하게 됩니다. `Controller` 내부의 `RequestMapping` 이 붙은 함수들이 응답을 돌려주는 과정에서 예외가 발생하게 될 경우, 예외가 발생한 시점부터 `ExceptionHandler` 의 함수가 실행되기 시작합니다. 여기서 `ExceptionHandler` 함수의 Return Type은 RequestMapping 함수의 Return Type과 동일하게 생각하시면 됩니다. 즉, `ModelAndView` 를 반환하면 HTML View가, `@ResponseBody Object` 이면 데이터를 담은 DTO가 클라이언트에게 전달됩니다.
+
+단기적으로 많은 종류의 `Controller` 가 존재하지 않을때는 그리 나쁘지 않은 전략입니다. 하지만 전체 어플리케이션에 적용시키기엔 부족합니다. 
+
+## HandlerExceptionResolver - 전체 어플리케이션 예외 처리
+
+`HandlerExceptionResolver` 를 구현하게되면 전체 어플리케이션에서 발생하는 예외를 처리할 수 있습니다. 여기서는 기본적인 부분이 미리 구현된 `AbstractHandlerExceptionResolver` 를 상속받아서 사용합니다. 해당 클래스를 상속받은 다음, `@Component` 등의 annotation으로 `Bean` 으로 만들면 됩니다.
+
+```java
+@Component
+public class CustomExceptionResolver extends AbstractHandlerExceptionResolver {
+			private static final Logger logger = LoggerFactory.getLogger(CustomExceptionResolver.class);
+
+		@Override
+    protected ModelAndView doResolveException(
+            HttpServletRequest request, HttpServletResponse response,
+            Object handler, Exception ex) {
+			logger.warn(ex.getMessage());
+			...
+    }
+}
+```
+
+여기서는 `doResolveException` 함수의 내용을 직접 구현함으로서, 특정 예외에 대한 동작을 정의하는 방식으로 만들게 됩니다. 즉, 해당 함수의 `Exception ex` 변수 안에, 이 함수에 도달하게 된 직접적인 예외가 담기게 됩니다. 이중 처리하고 싶은 예외에 대하여 동작을 코드로 정의하게 됩니다. 만약 기대하지 않은 예외가 들어와서 처리할 수 없으면, `ModelAndView` 가 아니라 `null` 을 반환하면, 다른 지점에서 처리하도록 합니다.
+
+앞서 `ExceptionHandler` 를 통해서 `BaseException` 에 대한 동작을 정의했습니다. 이를 `HandlerExceptionResolver` 를 통해 동일한 방식으로 처리하고 싶다면, `doResolveException` 의 Exception 인자가 `BaseException` 인지 확인하는 작업이 필요합니다.
+
+```java
+		@Override
+    protected ModelAndView doResolveException(
+            HttpServletRequest request, HttpServletResponse response,
+            Object handler, Exception ex) {
+				logger.warn(ex.getMessage());
+				if (ex instanceof BaseException) {
+						...
+				}
+    }
+```
+
+`HandlerExceptionResolver` 는 기본적인 Spring의 예외처리 인터페이스입니다. 위에서 사용한 `ResponseStatusException`, `ExceptionHandler` 등을 사용하여 예외를 처리하는 과정도, `AbstractHandlerExceptionResolver` 를 상속받은 객체를 사용하게 됩니다.
+
+이 방법은 어플리케이션 전체에 적용하는 예외처리 규칙을 만드는데 사용할 수 있으나, 예전 Spring MVC의 구조인 `ModelAndView` 를 반환하도록 되어 있습니다. 여기에 Body에 응답을 작성하는 것은 조금 까다로우며, API 서버의 용도로 사용하기엔 약간 부적합합니다..
+
+```java
+try {
+    response.getOutputStream().print(
+            new ObjectMapper().writeValueAsString(
+                    new ErrorResponseDto("#doResolveException within CustomExceptionResolver"))
+    );
+    response.setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+    return new ModelAndView();
+} catch (IOException e) {
+    logger.warn("Handling of [" + ex.getClass().getName() + "] " +
+            "resulted in Exception", e);
+}
+```
+
+`doResolveException` 함수의 인자로 전달된 `HttpServletResponse` 에 직접적으로 데이터를 작성해 주어야 하기 때문에 과정이 조금 복잡하며, 직접적인 HTTP 응답을 작성하기 위한 원론적 인터페이스를 사용하여야 합니다.
+
+## ControllerAdvice - ExceptionHandler 모음
+
+마지막으로 `@ControllerAdvice` 를 살펴봅시다. `@Controller` 와 `@RestController` 가 있듯이, `@ControllerAdvice` 와 `@RestControllerAdvice` 가 있습니다. 둘의 관계는 `@Controller` 와 `@RestController` 동일하게, `@ResponseBody` 의 유무입니다.
+
+```java
+@ControllerAdvice
+public class PostControllerAdvice {
+    @ExceptionHandler(BaseException.class)
+    public @ResponseBody ErrorResponseDto handleException(
+            BaseException exception) {
+        
+        return new ErrorResponseDto("@ExceptionHandler within ControllerAdvice");
+    }
+}
+```
+
+기본적으로 `ControllerAdvice` 는 일종의 `Component` 이며, 여러 `Controller` 에 구현된 `ExceptionHandler` 함수들을 모아올 수 있는 `Component` 입니다. 즉 위에서 다뤘던 `ExceptionHandler` 함수들을 이곳에 작성하면 어플리케이션 전체의 예외들에 대하여 작동하게 됩니다.
+
+만약 두개 이상의 `ControllerAdvice` 가 동일한 예외에 대하여 작동하도록 `ExceptionHandler` 가 정의되어 있다면, 어떤 `ControllerAdvice` 를 먼저 사용할지를 `@Order` 를 사용해 정의해야 합니다.
+
+```java
+@Order(1)
+@RestControllerAdvice
+public class PostRestControllerAdvice {
+...
+@Order(2)
+@ControllerAdvice
+public class PostControllerAdvice {
+```
+
+`@Order` annotation은 지금처럼 다양한 후보 `Bean` 이 존재할때 어떤것을 우선적으로 사용할지를 정하기 위해 사용합니다. 숫자가 낮을수록 우선적으로 사용됩니다.
