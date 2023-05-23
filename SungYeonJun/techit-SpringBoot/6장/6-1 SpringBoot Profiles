@@ -1,0 +1,221 @@
+여태까지 저희가 진행한 개발은 저희 각자의 컴퓨터에서 진행하였고, 그래서 고려할 것이 많지 않았습니다. 하지만 저희가 만든 산출물은 저희 컴퓨터에 머무르지 않습니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/36330dda-cf93-464f-9a84-aa4b0ca1b770/Untitled.png)
+
+Spring Boot의 산출물인 Web Application은 다양한 환경에서 실행될 수 있습니다. 물리적인 서버 컴퓨터를 구성하여 해당 환경을, Docker를 비롯한 컨테이너 환경에서, 또는 클라우드 서비스를 활용하여 Application 자체를 배포하는 방법도 존재합니다. 중요한 것은 어떤 환경에서 이를 실행하느냐에 따라 설정이 바뀌어야 하는 상황이 존재한다는 겁니다.
+
+Spring Boot는 환경에 따라 다른 설정을 별도로 저장하고, Application 실행시에 그 설정을 선택하여 적용하는 방식이 존재합니다. 이를 Profile이라고 부릅니다. 저희가 일반적으로 프로필이라고 하면 어떤 특정인에 대한 이력을 이야기 하듯, Spring Boot의 Profile은 환경에 따른 설정들을 이야기 한다고 이해하시면 좋습니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/64b96c07-8638-424c-8673-596f20d2c39a/Untitled.png)
+
+간단한 얘시로 저희가 사용하는 데이터베이스 설정을 하는 부분을 생각해 봅시다. 현재 보고있는 설정은 MySQL 데이터베이스를 사용하는 설정입니다. 이는 저희의 컴퓨터 환경에서 실행할때 사용할 설정입니다. 만약 단위 테스트를 진행하거나, 테이블 설계 단계에서 `Entity` 클래스를 빠르게 변경해야 하는 상황에서는 `H2` 라는 In-Memory 데이터베이스를 사용해볼 수 있습니다. 또한 `Hibernate` 의 `ddl-auto` , `show-sql` 옵션 역시 상황에 따라 다르게 설정해야 하는 부분입니다.
+
+## Profile 구성하기
+
+- `properties` 와 `yaml`
+    
+    Spring Boot 프로젝트를 처음 시작하면, `resources` 디렉토리 안에 `[application.properties](http://application.properties)` 파일이 있던것을 기억하실 겁니다. 저희는 이를 `application.yml` 로 대치하여 사용해 왔습니다.  둘의 차이점이라면 `properties` 는 하나의 설정을 정의해줄때 `spring.jpa.hibernate.ddl-auto=` 의 형식으로 Key를 정의해주는 반면, `yaml` 은 해당 옵션의 계층 구조가 보이는 형태로 작성됩니다(위 그림 참조). 
+    
+
+Spring Boot는 `resources` 디렉토리 안의 `application` 이라는 이름의 `properties` 파일 또는 `yaml` 파일을 사용하여 설정을 관리합니다. 어떤 형식의 파일이든 `Key-Value` 형태의 데이터로 해석하여 Spring Boot에서 사용하는 다양한 설정값으로 활용하게 됩니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/f0cabe05-573f-45ab-a0b0-81190a66d06d/Untitled.png)
+
+위의 예시에는 3개의 `application` 파일이 존재합니다. Spring Boot를 그냥 실행하게 되면 사용하는 것은 `application.yml` 파일입니다. 이것이 가장 기본적인 Profile 입니다. 그 외에 두가지 `yml` 파일이 추가된 것이 보이는데, `application-local.yml` 과 `application-test.yml` 파일입니다.
+
+다른 Profile의 설정파일을 정의하고 싶으면 위와같이 `application-<profile명>` 형태로 파일을 생성하시면 됩니다. 이러면 각각의 설정 파일이 profile을 의미하게 됩니다. 위의 설정 파일들을 작성해둔 상태로 아래의 내용을 `application.yml` 에 작성을 해두면,
+
+```yaml
+spring:
+  profiles:
+    active: test
+```
+
+가장 기본인 `application.yml` 파일의 설정과 함깨 `application-test.yml` 이 사용됩니다.
+
+```yaml
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    database: h2
+    database-platform: org.hibernate.dialect.H2Dialect
+logging:
+  level:
+    root: info
+```
+
+만약 저기서 `spring:profiles:active` 를 `local` 로 설정하면 `application-local.yml` 이 사용됩니다.
+
+```yaml
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/demo_jpa_schema
+    username: demo_jpa
+    password: asLK1209_
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+logging:
+  level:
+    root: info
+```
+
+설정을 바꿔가면서 실행하며, Spring Boot가 내는 로그의 윗부분을 확인해 봅시다.
+
+```
+(생략) dev.aquashdw.jpa.JpaApplication          : The following profiles are active: test
+```
+
+### Profile 적용하기
+
+지금은 `application.yml` 에 사용할 profile을 정해놓고 있습니다. 지금 작성해둔 설정 파일들은 빌드 과정에서 JAR 파일에 포함됩니다. JAR 파일을 실행하는 단계에 전달하는 인자를 전달하는 방식으로 사용할 profile을 정할 수 있습니다.
+
+첫번째는 사용하는 Java를 실행할때 `-D` 옵션을 통해 시스템 속성을 전달하는 것입니다.
+
+```bash
+java -jar -Dspring.profiles.active=local <jar파일>
+```
+
+또는 환경변수의 형태로 전달할 수도 있습니다.
+
+```bash
+export SPRING_PROFILES_ACTIVE=local
+java -jar <jar파일>
+
+# 또는 
+SPRING_PROFILES_ACTIVE=local java -jar <jar파일>
+```
+
+- 로그
+    
+    ```bash
+    .   ____          _            __ _ _
+     /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+    ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+     \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+      '  |____| .__|_| |_|_| |_\__, | / / / /
+     =========|_|==============|___/=/_/_/_/
+     :: Spring Boot ::                (v2.5.9)
+    
+    2022-04-21 00:32:53.384  INFO 23739 --- [           main] dev.aquashdw.jpa.JpaApplication          : Starting JpaApplication using Java 11.0.11 on MacBook-Pro.local with PID 23739 (/Users/aquashdw/Documents/likelion/2022_origin_spring_boot/git/jpa/build/libs/jpa-0.0.1-SNAPSHOT.jar started by aquashdw in /Users/aquashdw/Documents/likelion/2022_origin_spring_boot/git/jpa)
+    2022-04-21 00:32:53.388  INFO 23739 --- [           main] dev.aquashdw.jpa.JpaApplication          : The following profiles are active: local
+    ```
+    
+
+## Profile에 따른 Bean 변경
+
+Profile 설정에 따라서 `@Component` 클래스 중 일부를 만들거나 만들지 않을 수 있습니다. 예를 들어 `test`   profile이 설정되어 있을때만 사용하고 싶은 `@RestController` 등을 정의할 수 있습니다. 
+
+```java
+@Profile("test")
+@RestController
+@RequestMapping("test")
+public class TestApiController {
+```
+
+아니면 반대로 `test` profile이 아닐 때만 사용하고 싶은 `@Component` 가 있다면, 앞쪽에 `!` 를 붙여주면 됩니다.
+
+```java
+@Profile("!test")
+@Component
+public class RemoteApiComponent {
+```
+
+만약 개발 환경에서 사용하는 Middleware와 상용환경에서 사용하는 Middleware 간의 인터페이스의 차이가 있다면, 해당 내용을 `@Profile` 이용해 설정할 수 도 있습니다.
+
+```java
+@Component
+@Profile("local")
+public class RabbitQueue {
+}
+
+@Component
+@Profile("prod")
+public class KafkaQueue {
+}
+```
+
+## @Value
+
+`application.yml` 을 비롯한 설정 파일에 반드시 Spring Boot에서 사용하는 설정만 넣어줄 필요는 없습니다. 상황에 따라서 저희가 내부적으로 사용할 속성들이 있을 수 있습니다. 대표적으로 외부 API나 다른 서버와 통신을 하기위한 `URL` 과 API Id / Key 등이 있습니다.
+
+```yaml
+custom:
+  property:
+    single: custom-property
+    comlist: comma,separated,list,to,value
+ncp:
+	api-id: production-api-id
+	api-key: production-api-key
+```
+
+`application.yml` 이나 기타 profile 설정 파일에 위와 같은 내용을 등록하게 된다면, profile에 따라 Spring 외적으로 필요한 값들을 가져올 수 있습니다. 해당 값들이 필요한 `Bean` 객체에 
+
+```java
+// "custom-property"
+@Value("${custom.property.single}")
+private String customProperty;
+
+// ["comma", "separated", "list", "to", "value"]
+@Value("${custom.property.comlist}")
+private List<String> customCommaList;
+```
+
+와 같이 `@Value` annotation을 붙여주면 됩니다. 여기서 `customCommaList` 와 같은 변수는 `,` 를 기준으로 값을 나눠서 열거형 데이터로 주입해 줍니다. 지금은 `List<String>` 을 사용하지만, `String[]` 등의 형태로도 사용 가능합니다.
+
+## @Configuration과 @Bean
+
+마지막으로 `@Configuration` 을 살펴보도록 하겠습니다. 기본적으로 `@Configuration` 은 `@Controller` , `@Service` 등과 마찬가지로 `@Component` 객체입니다. 그 중에서도 `@Bean` annotation을 함수에 붙여줌으로서, 함수의 반환 클래스를 `Bean` 객체화 할 수 있는 특수한 `Component` 입니다. 이는 Spring Framework의 일부가 아닌, 외부 라이브러리의 클래스를 `Bean` 객체로 만들어 관리할 수 있다는 장점을 가지고 있습니다.
+
+Google이 만든 인기있는 JSON 라이브러리인 `Gson`을 가지고 예시를 들어봅시다. 만일 `Gson`을 `Bean` 객체처럼 사용하고 싶다면, `Gson`을 멤버 변수로 가지고 있는 `Component` 객체를 따로 작성해야 합니다.
+
+```java
+@Component
+public class GsonContainer {
+		private final Gson gson;
+		public GsonContainer(){
+				this.gson = new Gson();
+		}
+}
+```
+
+만약 `@Configuration` 과 `@Bean` 을 같이 사용한다면, 함수의 반환형을 `Gson` 으로 지정하면,
+
+```java
+@Configuration
+public class DemoConfiguration {
+    @Bean
+    public Gson gson(){
+        return new Gson();
+    }
+}
+```
+
+위와 같이 작성해주는 것으로, `Gson` 의 인스턴스를 `Bean` 객체로 IoC Container에 등록할 수 있습니다. 이렇게 되면 다른 `Bean` 객체에서 `Gson` 형의 객체를 요구한다면, 자동으로 주입할 수 있습니다.
+
+```java
+public PostService(
+        @Autowired Gson gson
+){
+    this.gson = gson;
+}
+```
+
+---
+
+Spring Framework는 개발의 편의는 물론, 운영상에 코드 외적인 변경사항에 대해서도 유연하게 대처하는 Framework 였습니다. Spring Boot의 등장과, `properties` 와 `yml` 파일의 적절한 활용은 그 강점을 더더욱 부각시킵니다. 다양한 방법으로 객체를 만들어내고 전달하는 법을 익힌다면 더 능숙하게 다룰 수 있어집니다.

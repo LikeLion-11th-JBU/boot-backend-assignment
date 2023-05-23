@@ -1,0 +1,176 @@
+객체지향 프로그래밍은 소스코드를 각자의 역할을 하는 객체의 단위로 나누어, 데이터와 기능을 가지고 있는 객체들간의 상호 작용을 통해, 전체적인 기능을 만드는 개발 패러다임입니다. 현대에 상용되고 있는 수 많은 프로그래밍 언어에 적용된 패러다임이기도 합니다. 이 객체의 개념은 여러 방면에서 편리한 방식으로 소프트웨어 개발이 가능하게 해 주었습니다만, 모든 상황을 만족시키는 형태는 아니었습니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/e9d5e0be-babf-433c-8c5b-caf47b02de6a/Untitled.png)
+
+위의 그림과 같은 상황에서, 저희는 특정 기능을 가진 `postService.createPost()` 함수의 앞뒤로 로그를 남기고 있습니다. 여기에서 발전시킨다면 각 함수의 처리에 얼마나 시간이 걸리는지를 확인하기 위한 수정을 할 수도 있습니다. 이런 기능 처리의 소요시간을 계산하는 것은 어떤 함수에서든 사용할만한 기능입니다. 하지만 서비스의 흐름과 직접적인 연관이 없어서 각 객체에 따로 구현해야 합니다.
+
+이런 여러 객체들이 가질 수 있는 공통의 기능을 만들기 위해 등장한 개념이 Aspect입니다. Aspect는 한글로 번역하면 관점이라는 의미로, 서로 다른 역할의 객체들이 가지는 공통의 관심사라고 이해하시면 됩니다. Aspect Oriented Programming이란, 이런 서로 다른 비즈니스 로직이 공통적으로 가지는 관심사에 대하여 고민하는 개발 패러다임으로서, 해당 공통 관심사를 해소하는 방법을 만들어 코드의 재사용성을 높이는 패러다임입니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c97f7da5-b703-4d5f-9410-c9f9142a49d2/Untitled.png)
+
+관점의 개념은 기본적인 프로그램 기능의 흐름과 같은 방향으로 흐르게 된다면 핵심 관점이라고 생각할 수 있습니다. 위의 개념에서, 카페 생성, 게시판 생성 등은 서비스 제공에 있어서 핵심적인 기능들 입니다. 이들은 각각 개별적인 객체, Spring 기준으로 `Service` 에서 제작할 수 있습니다.
+
+한편 가로 방향으로 작성된 보안, 로그 등의 기능을 보면, 이들은 각각 핵심 관점들 모두가 공유하는 기능이라고 볼 수 있습니다. 이들은 각각 `Service` 에서 구현한다면, 매우 유사한 형태의 코드가 될것입니다. 다만 각각이 적용되어야 하는 시점이나, 필요로 하는 인자들은 상황에 따라 조금씩 다를 수 있습니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/01f3ece0-1b6c-4cf7-a809-68ac16a5e9df/Untitled.png)
+
+일반적인 프로그램의 흐름에서, 객체의 함수를 활용하여 프로그램의 목적을 전달하게 됩니다. 그 함수들과 객체들의 사용의 관점에서, 실행부터 종료 사이에 여러 지점들을 생각할 수 있습니다. 이 지점들에 필요한 기능들을 구현하는 것이 목표입니다.
+
+- 프로그램 사이사이에서 필요한 횡단 관심사를 나타내는 단위를 `Aspect` 라고 부릅니다.
+- 실행과 종료 사이, 함수의 시작 전후, 예외의 전후 등 특정 기능이 실행되어야 하는 후보지점을 `Joinpoint` 라고 부릅니다.
+- 특정 `Joinpoint` 에서 실행되는 `Aspect` 의 기능을 `Advice` 라고 부릅니다.
+- `Joinpoint` 를 특정 짓는 표현을 `PointCut` 이라 하며, 해당 표현을 만족시키는 `Joinpoint` 마다 `Advice` 가 실행됩니다.
+
+기본적으로 위의 개념들을 가지고 AOP를 진행하게 됩니다. 저희가 AOP를 통해 횡단 관심사를 해소한다는 것은, `Aspect` 를 판단하여 해당 `Aspect` 에서 실행할 기능을 `Advice` 의 형태로 구현하며, 해당 `Advice` 가 실행되어야 하는 `Joinpoint` 를 `Pointcut` 으로 지정하는 것입니다.
+
+## Spring AOP 체험하기
+
+가장 구현하기 간단하며, AOP의 개념을 살펴보기 편한 로그 기능을 AOP를 이용해 작성해 봅시다. 어떤 함수에 대하여, 해당 함수에 전달된 인자를 확인하고, 반환값을 확인하고, 총 소요시간을 계산하는 기능(`Advice`)을 만들어 봅시다.
+
+### AOP Dependencies
+
+많은걸 추가할 필요없이 `spring-boot-starter-aop` 만 추가해주면 됩니다. 버전도 Spring Boot Plugin이 관리해줍니다.
+
+```java
+implementation 'org.springframework.boot:spring-boot-starter-aop'
+```
+
+### Annotation 만들기
+
+저희는 `@interface` (어노테이션) 기반의 AOP를 진행할것이기 때문에, 저희만의 어노테이션을 만들어야 합니다. 이 어노테이션이 붙은 함수를 `Pointcut` 으로 활용하게 됩니다.
+
+```java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface LogExecutionTime {}
+```
+
+어노테이션을 만들때는, 해당 어노테이션이 어디에 붙는 어노테이션인지를 나타내기 위한 `@Target` 과, 어느 시점까지 어노테이션이 존재하는지를 나타내기 위한 `@Retention` 이 필요합니다.
+
+- `@Target` 을 이용해 해당 어노테이션이 어디(함수, 매개변수, 멤버변수)에 적용이 가능한지를 `ElementType` 이라는 `enumeration` 에 저장할 수 있습니다.
+- `@Retention` 은 어노테이션이 Runtime, 즉 실행중에도 사용할 수 있는지를 정의하기 위한 어노테이션입니다. 어노테이션은 메타 정보를 주기 위한 기능이기 때문에, 실행중에 반드시 필요한 정보가 아닐 수 도 있기 때문에 해당 설정이 필요합니다. 여기서 `RetentionPolicy.RUNTIME` 을 전달하면, 실행중에도 해당 어노테이션의 정보를 JVM이 알 수 있어서, AOP 등을 위해 사용할 수 있습니다.
+
+위와 같은 어노테이션을 저희가 정의할 `Advice` 만큼 만들어 둡니다.
+
+```java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface LogArguments {}
+
+--- 
+
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface LogResults {}
+```
+
+### LoggingAspect
+
+저희는 로그를 남기기 위한 `Aspect`를 정의하고자 합니다. 새로운 클래스 `LoggingAspect` 를 만들고, 해당 클래스가 `Aspect` 를 표현했다는 것을 알리기 위한 `@Aspect` 어노테이션과 Spring에서 Bean으로 인식하도록 `@Component` 를 붙여줍시다.
+
+```java
+@Aspect
+@Component
+public class LoggingAspect {
+		private static final Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
+    ...
+```
+
+이 클래스에 각각 `Pointcut` 을 위한 `Advice` 를 함수의 형태로 구현하고, `Pointcut` 은 마찬가지로 어노테이션의 인자로 전달합니다. 여기서 사용할 `Advice` 의 형태는 세가지로,
+
+- `@Around` : 대상 `Joinpoint` 의 실행 전과 후에 적용하기 위한 `Advice` 입니다.
+- `@Before` : 대상 `Joinpoint` 의 실행 전에 적용하기 위한 `Advice` 입니다.
+- `@AfterReturning` : 대상 `Joinpoint` 가 값을 반환하기 전에 적용하기 위한 `Advice` 입니다.
+
+여기에 `value` 인자로 어떤 `Joinpoint` 를 대상으로 할지 `Pointcut` 을 설정할 수 있습니다. 저희는 `Pointcut` 으로 활용할 어노테이션을 만들었기 때문에 해당 정보를 전달하면 됩니다.
+
+```java
+@Around(value = "@annotation(LogExecutionTime)")
+public Object logExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable{
+    ...
+```
+
+위와같은 형태로 정의합니다.
+
+### logExecutionTime
+
+먼저 함수의 실행에 소요되는 시간을 계산하는 `Advice` 를 작성해 봅시다.
+
+```java
+@Around(value = "@annotation(LogExecutionTime)")
+public Object logExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable{
+    long startTime = System.currentTimeMillis();
+    Object proceed = joinPoint.proceed();
+    long endTime = System.currentTimeMillis() - startTime;
+    logger.info(joinPoint.getSignature() + " executed in " + endTime + "ms");
+    return proceed;
+}
+```
+
+먼저 인자를 확인하면, `ProceedingJoinPoint` 라는 객체가 전달됩니다. `ProceedingJoinPoint` 는 `JoinPoint` 인터페이스를 상속받는데, `JoinPoint` 객체는 저희 `Advice` 가 실행될 당시의 대상 `Joinpoint` 를 나타내는 객체라고 생각할 수 있습니다. 여기에 `ProceedingJoinPoint` 는, 대상의 전과 후에 모두 동작하기 위해서 `proceed()` 함수를 제공하는데, 이 함수가 실행되면 대상이 된 `Joinpoint` 가 실행된다고 볼 수 있습니다.
+
+처음 `Advice` 의 시작 지점에 `System.currentTimeMillis()` 를 이용해 현재 시각을, 이후 `joinPoint.proceed()` 를 이용해 함수를 실행하고, 다시 `System.currentTimeMillis()` 를 사용해 총 소요 시간을 계산합니다. 이후 해당 내용을 로그로 남깁니다.
+
+여기서 `proceed()` 의 결과를 반환하는데, 이 반환값이 실제 함수를 호출한 대상에 반환됩니다. 이를 이용해 실제 함수를 실행시키지 않고, 캐시의 결과를 반환하는 등의 용도로도 사용할 수 있습니다. `joinPoint.proceed()` 를 실행하지 않고 캐시의 내용을 가져와 `Advice` 함수의 반환값으로 설정하면 됩니다.
+
+### logParameters
+
+이번엔 함수의 매개변수를 기록하는 `Advice` 를 작성해 봅시다.
+
+```java
+@Before(value = "@annotation(LogArguments)")
+public void logParameters(JoinPoint joinPoint) {
+    MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+    logger.trace("method description: [{}]", methodSignature.getMethod());
+    logger.trace("method name: [{}]", methodSignature.getName());
+    logger.trace("declaring type: [{}]", methodSignature.getDeclaringType());
+
+    Object[] arguments = joinPoint.getArgs();
+    if (arguments.length == 0) {
+        logger.trace("no arguments");
+    }
+    for (Object argument: arguments){
+        logger.trace("argument: [{}]", argument);
+    }
+}
+```
+
+여기서는 `joinPoint` 의 `getSignature()` 함수를 사용하고 있습니다. 여기서 `MethodSignature` 는 내부적으로 서로 다른 함수를 판단하기 위한 기준이 되는 이름과 매개변수의 조합을 의미합니다. 여기에 `joinPoint.getArgs()` 를 이용해 실제로 전달된 인자들도 확인하여 로그를 남기는 형태의 `Advice` 입니다.
+
+`@Around` 와는 다르게 함수 실행전에 실행된 뒤 종료되는 `Advice` 이기 때문의 값의 반환이 필요 없습니다.
+
+### logResults
+
+마지막으로 반환값을 기록하기 위한 `Advice` 를 작성해 봅시다.
+
+```java
+@AfterReturning(value = "@annotation(LogResults)", returning = "returnValue")
+public void logResults(JoinPoint joinPoint, Object returnValue) {
+    MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+
+    logger.trace("method: [{}]", methodSignature.getName());
+    logger.trace("return type: [{}]", methodSignature.getReturnType());
+
+    logger.trace("return value: [{}]", returnValue);
+}
+```
+
+저희는 `Joinpoint` 의 반환값을 필요로 하기 때문에, 해당 반환값의 실제 값을 함수에 포함시켜 주어야 합니다. 이때 `@AfterReturning` 어노테이션의 `returning` 인자로, 자기 자신의 매개변수 중 어디에 반환값을 전달할지를 정의합니다. 이때 reflection을 이용해 사용된 매개변수의 이름 (여기서는 `returnValue` )를 활용하게 됩니다.
+
+### 테스트 해보기
+
+간단한 함수에 위에 정의했던 어노테이션들을 적용시켜 그 기능을 살펴봅시다.
+
+```java
+@LogArguments
+@LogExecutionTime
+@LogResults
+@GetMapping("")
+public List<PostDto> readPostAll() {
+    return this.postService.readPostAll();
+}
+```
+
+---
+
+AOP는 횡단 관점을 기준으로 코드 재사용성을 높여주는 프로그래밍 패러다임 입니다. 기초적인 지식을 바탕으로, 차근차근 사용하면 다양한 부분의 기능을 활용할 수 있게 될 것입니다.

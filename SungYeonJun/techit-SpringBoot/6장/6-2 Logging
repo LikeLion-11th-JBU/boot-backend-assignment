@@ -1,0 +1,208 @@
+저희가 일반적인 코딩 공부를 할때, 현재 작성한 코드를 디버거 없이 상태를 확인할때, 저희는 터미널에 출력을 합니다. Java의 경우는 `System.out.println` 입니다. 디버거를 능숙하게 사용한다면 그럴일은 비교젹 적겠지만, 변수의 내용을 그 시점에서 출력하는 것은 문제 해결을 위해 매우 흔히 하는 행동입니다.
+
+저희는 웹 서비스를 만들기 위해 Spring Boot를 공부합니다. 웹 서비스는 한번 실행된 이후로 저희가 꾸준하게 지켜보고 있을 수 없습니다. 그래서 어플리케이션에서 무슨일이 일어났는지를 남겨주는 역할을 하는 로깅은 한번쯤 짚고 넘어갈 주제입니다.
+
+## Logging Dependencies
+
+기본적으로 로깅을 하기위해서 필요한 가장 기초적인 의존성은 `apache-commons-logging` 입니다. 하지만 이는 Spring 5.X (Spring Boot 2.X) 버전부터 `spring-jcl` 에 포함되어 있으며, 저희가 사용하고 있는 `spring-boot-starter` 에 자동으로 포함된 경우가 많기 때문에 일반적으로는 걱정할 필요는 없습니다. 즉, spring boot를 사용하면 로깅 라이브러리가 포함되어 있다는 이야기입니다.
+
+이렇게 진행할경우 기본으로 사용하는 라이브러리는 `Logback` 입니다. 이 외에 다른 라이브러리를 사용하고 싶다면 해당 Logging 라이브러리의 의존성을 추가하고,
+
+```java
+configurations {
+	compile.exclude module: 'spring-boot-starter-logging'
+}
+```
+
+를 `build.gradle` 추가하여, 기본적으로 제공되는 의존성을 제거해야 합니다.
+
+## Log Level
+
+로깅을 진행할때는 다섯가지 level이 있습니다. (언어, 환경에 따라 조금씩 차이 존재)
+
+```java
+		@RequestMapping("/")
+    public String index() {
+        logger.trace("A TRACE Message");
+        logger.debug("A DEBUG Message");
+        logger.info("An INFO Message");
+        logger.warn("A WARN Message");
+        logger.error("An ERROR Message");
+
+        return "index";
+    }
+```
+
+위의 예시 코드들은 아래에서 위로 갈수록 어느정도 수준에서 확인해야 하는 메시지 인지를 의미합니다. 위에서 아래로 갈수록 반드시 알아야 하는 메시지 내용을 의미하게 되는데, 즉 `trace` 에 가까울수록 사소한 진행 상황에 대한 메시지, `error` 에 가까울수록 서비스에 위협이 될 수 있는 내용을 알려주는 메시지를 기록하는 용도로 사용하게 됩니다. 특히 `error` 는 서비스에서 사용자의 요청을 처리하는데 실패하는, 서비스 제공에 심각한(fatal 또는 critical) 수준의 메시지를 알리는데 사용됩니다.
+
+## Log Level 설정
+
+이 로그 레벨은 어플리케이션을 실행하면서 어느 수준의 로그까지 출력할지를 지정할 수 있습니다. 이때, 위에서 언급한 중요도 순에서, 지정한 레벨과 같거나 더 중요한 메시지까지 출력하게 됩니다. 실행시 설정한 로그 레벨이 `warn` 이면, `warn` 보다 높거나 같은 메시지, 즉 `logger.warn()` 과 `logger.error()` 으로 작성한 로그만 남게 됩니다. 즉 작성되는 모든 로그 메시지를 보고싶다면 `trace` 로 설정해서 실행하면 됩니다.
+
+기본적으로 `java` 를 이용해 실행한다면 `trace` 와 `debug` 는 추가 설정없이 실행단계에서 바로 설정이 가능합니다.
+
+```bash
+java -jar spring-boot.jar --trace
+java -jar spring-boot.jar --debug
+```
+
+### 설정 파일로 상세 로그 설정
+
+`[application.properties](http://application.properties)` 또는 `application.yml` 파일로 로그 레벨을 설정할 수 있습니다.
+
+```
+logging.level.root=warn
+```
+
+```yaml
+logging:
+  level:
+    root: warn
+```
+
+기본적으로 전체 어플리케이션에 적용되는 로그 레벨을 지정하고 싶다면, `logging.level.root` 속성에 설정하고 싶은 레벨을 지정해주면 됩니다. 그 외에 특정 클래스나 패키지 단위로 로그 레벨을 설정할 수 있습니다.
+
+```yaml
+logging:
+	level:
+		root: warn
+		org.springframework: info
+```
+
+위와 같이 설정하게 될 경우, 기본적으로 로그 메시지는 `warn` 메시지까지만 출력하지만, `org.springframework` 패키지의 하위 패키지 또는 클래스들에서 작성하는 로그 메시지들은 `info` 까지 출력됩니다. 여기서 이 패키지라는 것은 결과적으로 `LoggerFactory`에 요청할때 전달하는 인자로 전달됩니다.
+
+```java
+private static final Logger logger = LoggerFactory.getLogger(PostController.class);
+```
+
+이는 실행 단계에서 JVM에 시스템 설정값으로 전달할 수도 있습니다.
+
+```bash
+java -Dlogging.level.org.hibernate=info -jar spring-boot.jar
+```
+
+## Logback 살펴보기
+
+우선 `Logback` 이 어떻게 로그를 작성하고, 어디에 어떻게 로그를 정리하는지 알아보기 위해 간단한 구조를 살펴봅시다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/076707b1-593f-4521-9069-a35b270b5c2a/Untitled.png)
+
+`Logback` 은 기본적으로 `Appender` 라는 `interface` 단위로 로그 작성 방식을 결정하게 됩니다. 위의 class diagram을 보시면 `ConsoleAppender` , `FileAppender` , `RollingFileAppender` 와 같은 class들이 보입니다. 이러한 `Appender` 를 상속받은 class가 `Logback` 에 등록되면, 각각 정의된 방식으로 로그를 남기는 형태로 `Logback` 이 작동하게 됩니다. 즉 `Logback` 을 설정한다는 것은, 위와 같은 class들이 필요로 하는 정보들을 `xml` 파일의 형태로 작성하여 `Logback` 내부에서 객체화 될 수 있도록 하는것이라 볼 수 있습니다. `xml` 로 객체화한 `Appender`는 이후 `Logger`에 추가하여, `Logger`가 메시지를 전달할때 `Appender`가 작동하게 됩니다.
+
+- `logback-spring.xml` 전체 예시
+    
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+    
+        <property name="LOGS" value="./logs" />
+    
+        <appender name="Console"
+                  class="ch.qos.logback.core.ConsoleAppender">
+            <layout class="ch.qos.logback.classic.PatternLayout">
+                <Pattern>
+                    %black(%d{ISO8601}) %highlight(%-5level) [%blue(%t)] %yellow(%C{1.}): %msg%n%throwable
+                </Pattern>
+            </layout>
+        </appender>
+    
+        <appender name="RollingFile"
+                  class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOGS}/spring-boot-logger.log</file>
+            <encoder
+                    class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <Pattern>%d %p %C{1.} [%t] %m%n</Pattern>
+            </encoder>
+    
+            <rollingPolicy
+                    class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>${LOGS}/archived/spring-boot-logger-%d{yyyy-MM-dd-HH-mm}.%i.log
+                </fileNamePattern>
+                <timeBasedFileNamingAndTriggeringPolicy
+                        class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                    <maxFileSize>10MB</maxFileSize>
+                </timeBasedFileNamingAndTriggeringPolicy>
+            </rollingPolicy>
+        </appender>
+    
+        <root level="info">
+           <appender-ref ref="RollingFile" />
+            <appender-ref ref="Console" />
+        </root>
+    
+    <!--    <logger name="dev.aquashdw" level="trace" additivity="false">-->
+    <!--        <appender-ref ref="RollingFile" />-->
+    <!--        <appender-ref ref="Console" />-->
+    <!--    </logger>-->
+    
+    </configuration>
+    ```
+    
+
+### Appender 설정
+
+`Appender` 를 정의한 설정부터 살펴보면,
+
+```xml
+<appender name="Console"
+          class="ch.qos.logback.core.ConsoleAppender">
+    <layout class="ch.qos.logback.classic.PatternLayout">
+        <Pattern>
+            %black(%d{ISO8601}) %highlight(%-5level) [%blue(%t)] %yellow(%C{1.}): %msg%n%throwable
+        </Pattern>
+    </layout>
+</appender>
+```
+
+`<appender>` 요소에 작성된 내용을 바탕으로, Spring Boot 실행시 `Appender` 객체가 생성됩니다. `Appender` 의 구분자는 `name` 속성으로, 정확한 인스턴스 클래스는 `class` 속성으로 정의합니다. `Appender` 가 출력하는 메시지의 내용은 `layout` 또는 `encoder` 로 정의하는데, `layout` 과 `encoder` 의 차이는 출력의 (내부) 결과가 `String` 이냐 아니면 `OutputStream` 으로 보내는 `byte[]` 로 나오냐 입니다. 간단하게 생각하면 파일로 로그를 출력하는 `FileAppender` 를 구성할때 `encoder` 를 사용하면 됩니다.
+
+- `Pattern` 링크
+    
+    [Chapter 6: Layouts](https://logback.qos.ch/manual/layouts.html#conversionWord)
+    
+
+```xml
+<appender name="RollingFile"
+          class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOGS}/spring-boot-logger.log</file>
+    <encoder
+            class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+        <Pattern>%d %p %C{1.} [%t] %m%n</Pattern>
+    </encoder>
+
+    <rollingPolicy
+            class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <fileNamePattern>${LOGS}/archived/spring-boot-logger-%d{yyyy-MM-dd-HH-mm}.%i.log
+        </fileNamePattern>
+        <timeBasedFileNamingAndTriggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+            <maxFileSize>10MB</maxFileSize>
+        </timeBasedFileNamingAndTriggeringPolicy>
+    </rollingPolicy>
+</appender>
+```
+
+`RollingFileAppender` 는 특정 기준에 따라 로그 파일을 생성, 보관, 회전 (특정 파일 수 이하로 유지)하는 `Appender` 입니다. 그래서 `<rollingPolicy>` 요소로 그 규칙을 전달하는 부분이 추가되어야 합니다.
+
+### Logger 설정
+
+```xml
+    <root level="info">
+       <appender-ref ref="RollingFile" />
+        <appender-ref ref="Console" />
+    </root>
+
+<!--    <logger name="dev.aquashdw" level="trace" additivity="false">-->
+<!--        <appender-ref ref="RollingFile" />-->
+<!--    </logger>-->
+```
+
+`Appender` 를 만들면 해당 `Appender` 를 사용할 `Logger` 들을 정의해줘야 합니다. `<root>` 요소는 소스 코드 상의 모든 `Logger` 에 대한 설정, `<logger>` 는 특정 `Logger` 에 대한 설정입니다. 각 요소는 `<appender-ref>` 를 가지고 위에 정의한 `Appender` 를 지정해줄 수 있습니다.
+
+`<logger>`와 `<root>` 둘다 로그 레벨을 설정하기 위한 `level` 속성이 있으며, `<logger>`의 경우, 어떤 이름(패키지)을 가진 `Logger` 인지, `<root>`에서 출력한 내용에 덧붙여 출력할지에 대한 속성들이 추가로 존재합니다. `name`의 경우 저희가 Spring Boot 내에서 선언한 `LoggerFactory.getLogger()` 에 인자로 들어간 클래스 명을 기준으로, 클래스 전체 경로 또는 상위 패키지 이름을 전달할 수 있으며, 그 이름이 `name`과 동일할 경우 해당 `<logger>` 의 설정이 적용됩니다.
+
+위의 설정을 기준으로 작동시키면, Spring Boot 내부의 모든 `Logger` 는 `info` 이상의 메시지를, 콘솔과 파일로 출력하게 되며, 주석된 내용을 해제하면 `dev.aquashdw` 패키지의 하위 패키지들은 `trace` 이상의 메시지를 파일로 출력하게 됩니다.
+
+---
+
+로그에 대한 간단한 지식과 함깨, `Logback` 을 설정하는 방법을 알아보았습니다.

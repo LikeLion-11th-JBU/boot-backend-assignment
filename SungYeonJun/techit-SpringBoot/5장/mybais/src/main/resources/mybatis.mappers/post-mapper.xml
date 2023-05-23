@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUbLIC "-//mybatis.org//DTD mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="dev.Sung.mybais.mapper.PostMapper">
-    <insert id = "createPost" parameterType = "dev.Sung.mybais.mapper.PostMapper">
+<mapper namespace="dev.Sung.mybais.repository.PostMapper">
+    <insert id = "createPost" parameterType = "dev.Sung.mybais.repository.PostMapper">
         insert into POST(title, content, writer, board)
         values (#{title}, #{content}, #{writer}, ${board})
         <!-- #{title} == 'title' -->
