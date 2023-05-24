@@ -6,9 +6,12 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Simple Home</title>
+    <title>Simple admin Home</title>
 </head>
 <body>
-    Hello World!
+    Hello admin World!
+    <form th:action="@{user/logout}" method="post">
+        <input type="submit" th:value="로그아웃">
+    </form>
 </body>
 </html>

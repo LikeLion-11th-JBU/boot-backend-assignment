@@ -1,0 +1,269 @@
+UserDetailService 만들어보기 
+WebSecurityConfig 클래스에서 실제로 사용자관리를 어떻게 하는지를 정의하기 위한 것은 다른 메소드가 필요하다. 
+formLogin라는 것을 만듦으로서 우리가 로그인 페이지를 사용을 하겠다라고 HttpSecurity설정을 했을 때, AuthenticationMangerBuilder를 없는 채로 기본값으로 하게 되면 run을 통해서 보았던 default security password라는 것이 등장한다. 즉 이 함수에서 사용자, 사용자의 관리, 사용자의 username과 비밀번호가 일치하는지에 대한 확인 같은 과정이 이 함수에서 일어난다.
+1. inMemoryAuthentication은 메모리 상에서 유저를 검증하겠다는 의미이다 -> 이렇게 되면 기본적은 Spring Boot에 내장되어서 구현이 되어 있는 객체 중 하나를 유저 관리를 위해서 사용하게 된다. 그리고 다음 단계로 유저, password 등을 추가할 수 있다. 
+    @Bean
+    public UserDetailsService userDetailsService(){
+        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+        manager.createUser(User.withDefaultPasswordEncoder().username("user").password("password").roles("USER").build());
+        manager.createUser(User.withDefaultPasswordEncoder().username("admin").password("adminpassword").roles("ADMIN").build());
+        return manager;
+    }
+        @Bean
+    public UserDetailsService users(){
+
+        UserDetails user = User.builder()
+                .username("user1")
+                .password("user1pass")
+                .roles("USER")
+                .build();
+        UserDetails admin = User.builder()
+                .username("admin")
+                .password("admin1pass")
+                .roles("ADMIN")
+                .build();
+        return new InMemoryUserDetailsManager(user, admin);
+    }
+
+-> user를 만들게 되면 마지막에 build라는 메소드가 호출이 되는데, 그 과정에서 passwordEncoder가 작동을 하게 된다. 이 passwordEncoder가 null이면 user의 password에 password를 넣는다고 해도 정상적으로 작동하지 않는다. 
+
+1-1. 그러기 위해서 PasswordEncoder 의 Bean을 하나 만들어준다.
+@Bean으로서 등록을 하기 위해서 bean 어노테이션을 붙여주고, 인터페이스를 통해서 함수를 전달해준다. bean 객체의 이름을 PasswordEncoder로 설정을 해두면 build 메소드에 passwordEncoder가 들어오게 된다.
+    @Bean
+    public PasswordEncoder passwordEncoder(){
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+
+1-2. 또한 manager.createUser 밑에 또 다른 manager.createUser를 사용해서 user를 추가할 수 있다.
+Spring security에서 DB나 다른 도구를 사용해서 사용자 정보를 저장을 하고 싶을 때 UserDetailService를 구현한 객체를 사용해서 사용자의 정보를 넘겨준다.
+
+1-3. entity라는 패키지를 만들어준다. 그 다음 패키지 안에 UserEntity 클래스와 UserRepository 인터페이스를 만들어준다. UserEntity 클래스에 @Entity, @Table(name = "USER_ENTITY") 어노테이션을 붙여준다. -> jpa를 사용하기 위해서 
+그 다음 DB가 요구하는 Id 값을 설정한 다음 DB와 일대일로 매칭되는 Entity에 대한 내용을 넣는다.
+@Entity
+@Table(name = "USER_ENTITY")
+public class UserEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;            // 이것은 DB 에서 요구하는 사항이다.
+
+    @Column(unique = true)
+    private String username;
+
+    @Column
+    private String password;
+
+    @Column
+    private String nickname;        // 서비스에 따라 불리는 닉네임에 대한 것을 Entity 에 추가한다.
+
+    @Column
+    private String role;
+}
+
+1-4. 그 다음 UserRepository 인터페이스에 UserEntity를 extends한다.
+public interface UserRepository extends CrudRepository<UserEntity, Long> {
+}
+
+-> 기초 UserEntity는 만들었고, 이 Entity를 사용을 해서 login 관리를 하고자 한다. 
+
+1-5. infra라는 패키지를 만들고, 여기에 CustomUserDetailsService 라는 클래스를 만든 다음, @Service 어노테이션을 클래스 위에 붙이고 UserDetailService를 implemnets한다.
+
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+
+    private static final Logger logger = LoggerFactory.getLogger(CustomUserDetailsService.class);
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return null;
+    }
+}
+
+-> 사용자의 데이터를 관리하기 위해서는 UserDetailsService 인터페이스의 일종을 사용하게 됨으로, 그것을 구현하는 구현체를 만드는 과정이다. 이때 하나의 함수(loadUserByUsername)를 무조건 오버라이드 해줘야하는데, 비밀번호가 필요가 없다. -> springBoot를 사용했을 때는 이제 사용자가 user정보를 제공을 했을 때 그 유저정보와 연관되어 있는 비밀번호를 요구하는 것이다. 즉, 사용자가 로그인 과정에서 자신의 id(username)를 제공을한다. 그러면 spring 내부적으로 CustomUserDetailsService 객체를 사용을 할 때, loadUserByUsername 함수에다가 사용자가 입력을 했던 username을 인자로서 전달하게 된다. 그러면 반환되는 것은 UserDetails라는 객체인데, UserDetails안에 사용자의 nickname, 비밀번호 같은 정보들이 들어가게 되는 것이다.
+
+1-6. 그렇기 때문에 UserDetails를 반환을 하도록 loadUserByUsername 부분을 작성하면 된다.
+그러기 위해서 UserRepository를 가져온다. 그리고 loadUserByUsername을 할 거라면 UserRepository.findByuserName을 사용 해야한다. 그러기 위해서 UserRepository에 findByuserName을 생성해준다.
+
+public interface UserRepository extends CrudRepository<UserEntity, Long> {
+    UserEntity findByUserName(String username);
+
+}
+
+-> 이렇게 하면 UserRepository에서는 사용자 이름을 가지고 있는 UserEntity를 가져올 수 있다.
+
+1-7. loadUserByUsername을 하기 위해서 UserRepository의 사용자의 이름을 가지고 있는 UserEntity를 사용한다.
+
+final UserEntity user = userRepository.findByUserName(username);
+
+1-8. UserEntity를 받아왔으니, 이것을 UserDetails로서 어떻게 만들어 주는지에 대한 내용이 추가되어야한다. (UserDetails는 SpringBoot security 내부에서 사용자 정보를 관리하기 위한 기초적인 객체 인터페이스이다. 즉, 이 UserDetails 인터페이스를 구현을 하는 객체가 SpringBott Security에서 실제로 사용을 할 수 있는 형태의 객체가 된다.) UserEntity를 UserDetails로 바꾸기만 하면 사용할 수 있다. (User는 UserDetails를 구현하고 있는 객체중 하나이다 -> 이 객체를 사용하면 된다.)
+return User(); 그리고 ()안에 Username을 넣어서 UserEntity를 받아왔기 때문에 (username, UserEntity의 password를 받아와야한다(User는 username과 password를 인자로 받기 때문이다.) ) 
+
+1-9. UserEntity의 Password를 받아오기 위해서 UserEntity에 getter와 Setter를 생성한 다음 UserEntity의 Password를 받아온다.
+
+   @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        final UserEntity userEntity = userRepository.findByUserName(username);
+        return new User(username, userEntity.getPassword(), new ArrayList<>());
+    }
+
+-> return의 마지막에 new ArrayList가 오는 이유는 User의 마지막에는 GrantedAuthority를 상속받는 객체를 돌려주는 Collection이여야 되는데, 빈 Collection인 ArrayList가 들어가도 괜찮다.
+
+-> 여기까지 하면 CustomUserDetailsService는 Service 객체이고, DB상에 저장을한다. 하지만 이 상테이면 사용자가 하나도 없기 때문에 사용자를 하나 만들어서 test를 해보자
+
+1-10. CustomUserDetailsService의 생성자에 test용 사용자를 만든다. 추가로 PasswordEncoder를 CustomUserDetailsService에 추가한다. 
+
+    public CustomUserDetailsService(
+            @Autowired UserRepository userRepository,
+            @Autowired PasswordEncoder passwordEncoder
+    ) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        final UserEntity testUserEntity = new UserEntity();
+        testUserEntity.setUsername("entity_user");
+        testUserEntity.setPassword(passwordEncoder.encode("test1pass"));
+        this.userRepository.save(testUserEntity);
+
+    }
+
+1-11. WebSecurityConfig로 가서 inMemoryAuthentication부분을 다 주석처리한다. 그다음 auth.userDetailsService();에 아까 만들었던 CustomUserDetailsService를 받아와야하기 때문에 생성자를 만들고 userDetailsService에 customUserDetailService를 받아온다.
+    
+    private final UserDetailsService userDetailsService;
+
+    public WebSecurityConfig(@Autowired CustomUserDetailsService customUserDetailsService){
+        userDetailsService = customUserDetailsService;
+    }
+
+-> 이렇게 하면 coustomUserDetailsService를 가져다가 사용할 수 있다.
+
+1-12. CustomuserDetailsService를 UserDetailService에 받아왔으면 이것을 AuthenticationMangerBuilder에 등록해줘야한다.
+
+
+2. 그 다음은 회원가입 부분이다. -> 회원가입을 한다는것은 UserDetailService에서 사용하고 있는 Backend가 무엇이 되었든간에 -> 지금 같은 경우는 jpaEntity를 사용하고 있다. -> 처음에 설정을 했을 때는 hashmap으로 관리를 하고 있었다. 그렇기 때문에 딱 정형화된 CRUD 인터페이스가 존재하기는 하지만 기본적으로는 UserDetailService가 우선이다. 다음 단계는 UserEntity를 만들기위한 내용이다. 
+
+2-1. UserController에 GetMapping을 추가한다.
+    @GetMapping("signup")
+    public String signup(){
+        return "signup-form";
+    }
+
+2-2. 그 다음 sign-up의 URL에 대한 singup이라는 HTML 파일을 만든다.
+
+2-3. 그 다음은 index.hmtl에서 회원가입 버튼을 만들어준다. 
+        <button onclick="location.href='/user/signup'">회원가입</button>
+-> signup은 수동으로만들어줘야한다.
+그리고 WebSecurityConfig에서 antMatchers에 /user/signup/**을 추가한다.
+
+2-4. UserController에 PostMapping으로 signup을 만들어준다. -> 회원가입 요청을 받고 그것에 대한 작업을 처리하는 과정이다.
+
+    @PostMapping("signup")
+    public String signupPost(){
+        return "redirect:/home";    -> 이렇게하면 redirect응답이 돌아가게 된다. -> 회원가입 버튼을 누르면 home으로 돌아온다.
+    }
+
+2-5. UserController에 UserRepository를 받아온다.
+그 다음 PostMapping에서 사용자를 만들것인데 사용자를 만들기 위한 내용을 dto라는 패키지를 만들고, 그 안에 UserDto라는 자바 클래스를 만들어서 그 내용을 추가할 것이다. 회원가입에 필요한것은 name과 password 두개임으로 
+
+public class UserDto {
+    private String username;
+    private String password;
+}
+
+을 만든다음 빈생성자, 생성자, getter와 setter, toString을 만든다.
+
+2-6. PostMapping(signup)에서 UserDto를 받아온다.
+ @PostMapping("signup")
+    public String signupPost(
+            @RequestParam("username") String username,      // 사용자가 입력한 사용자의 이름을 받아온다.
+            @RequestParam("password") String password,      // 사용자가 입력한 사용자의 패스워드를 받아온다.
+            @RequestParam("password_check") String passwordCheck        // 사용자가 입력한 패스워드를 체크한다.
+    ){
+        if(!password.equals(passwordCheck)){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+        UserEntity newUser = new UserEntity();      // password 가 일치할때
+        newUser.setUsername(username);
+        newUser.setPassword(password);
+        userRepository.save(newUser);
+        return "redirect:/home";
+    }
+
+-> 한 다음 실행을 하고 회원가입을 한 다음 로그인을 하면 error가 나온다
+
+2-7. UserController에 PasswordEncoder를 추가한다.
+
+3. homeController에 Principal를 인자에 추가  -> 로그인한 대상을 확인할 수 있는 첫 번째 방법.
+
+
+    @GetMapping
+    public String home(Principal principal){
+        try {
+            logger.info("connected user:{}", principal.getName());
+        }catch (NullPointerException e){
+            logger.info("no user logged in");
+        }
+        return "index";
+    }
+
+3-1. 로그인한 대상을 확인할 수 있는 두 번째 방법. ->principal 자리에 Authentication이라는 인자를 넣어준다.
+    @GetMapping
+    public String home(Authentication authentication){
+        try {
+            logger.info("connected user:{}",authentication.getName());
+        }catch (NullPointerException e){
+            logger.info("no user logged in");
+        }
+        return "index";
+    }
+
+3-2. 로그인한 대상을 확인할 수 있는 세 번째 방법 -> SecurityContextHodler.getContext()를 사용한다.
+    @GetMapping
+    public String home(){
+        try {
+            logger.info("connected user: {}",SecurityContextHolder.getContext().getAuthentication().getName());
+        }catch (NullPointerException e){
+            logger.info("no user logged in");
+        }
+        return "index";
+    }
+
+3-3. infra 패키지에 AuthenticationFacade클래스를 추가한다. 그 다음 이 클래스를 Bean으로 관리하기 위해서 component 어노테이션을 붙인다. 그러면 이 클래스는 어디에서든지 가져다가 사용할 수 있다. 그리고 Authentication을 돌려주기 위한 함수하나만 작성하면 된다.
+
+
+@Component
+public class AuthenticationFacade {
+    public String getUserName(){
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
+}
+
+3-4. 이 AuthenticationFacade 클래스를 homeController에 가져온다음 정의한다.
+
+    private final AuthenticationFacade authFacade;
+
+    public HomeController(
+            @Autowired AuthenticationFacade authFacade) {
+        this.authFacade = authFacade;
+    }
+
+
+3-5.
+
+@Controller
+@RequestMapping("home")
+public class HomeController {
+    private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
+    private final AuthenticationFacade authFacade;
+
+    public HomeController(
+            @Autowired AuthenticationFacade authFacade) {
+        this.authFacade = authFacade;
+    }
+
+    @GetMapping
+    public String home(){
+        try {
+            logger.info("connected user: {}", authFacade.getUserName());  -> 긴 부분을 짧게 줄일 수 있다.
+        }catch (NullPointerException e){
+            logger.info("no user logged in");
+        }
+        return "index";
+    }
+}
