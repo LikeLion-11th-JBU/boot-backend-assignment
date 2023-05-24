@@ -1,0 +1,112 @@
+AOP는 절차지향 프로그래밍이다. AOP는 OOP에서 해결하지 못한 문제들을 해결하기 위해서 등장한 개념이다.
+어느 한 함수 처리에 걸리는 시간을 측정하고 싶다. 
+실제로 서비스의 흐름과는 별개로 로그를 남기거나 서비스를 제공하기 위한 기능이다. 또한 서로 직접적인 연관은 없기 대문에 기능과는 별도로 작성하는 것이 이상적이다.
+즉 AOP는 서로 다른 비지니스 로직이 공통적으로 가지는 관심에 대하여 고민하는 개발 지향이다. 쉽게 말해서 logging과 같이 로그를 남긴다는 기능은 어떠한 비지니스 로직에든지 포함이 되어야한다. 하지만 그것이 반복적으로 똑같이 작성되면 소스코드가 복잡해지기 때문에 공통적으로 로그를 보고 싶다는 관심에 대한걸 어떻게 해소를 할 것인지에 대한 개발지향이다.
+
+AOP에 대한 3 가지 시나리오는 메소드를 실행하는데 걸리는 시간, 실행할 때 들어오는 메소드의 인자, 돌아나가게 되는 함수의 반환값들에 대한 logging을 동일하게 진행할 수 있도록 하는 시나리오이다. 
+일반적으로 카페의 케이스를 보면 카페의 기능에 해당하는 것은 카페 생성, 게시판 생성, 게시글 생성이 있다. 이것들이 비지니스 로직이라고 볼 수 있다. 카페가 생성되는데 걸리는 과정, 게시판이 생성되는데 걸리는 과정, 게시글이 생성되는데 걸리는 과정같은 부분들이 있을 것이다. 그런데 위 비지니스 로직에서는 어떠한 유저가 사용을 하는지 보안적인 측면이 있어야되고, 생성하는데 걸리는 과정, 시간등을 확인하기 위해서 로깅하는 과정도 필요하고 DB에 생성된 내용을 주고 받고하는 과정도 있어야한다. 이런식으로 여러 핵심 기능들 사이를 횡단한다고 해서 횡단 관심(AOP)이라고 한다. 
+
+일반적인 프로그램의 흐름이 대해서 생각해보면 
+1. 프로그램이 실행이 된다. 
+2. 프로그램이 실행이 되면 자바에서 설정되어있는 클래스들이 객체화 돼서 생성이된다.
+3. 클래스들은 자신의 역할에 맞는 함수, 함수가 잘못 처리되었을 때 발생하는 예외들을 가지고 있다.
+4. 이러한 자신의 역할을 가진 객체들이 서로서로 작동을 하면서, 서로 상호작용을 하면서 프로그램의 기능을 읽어 내는 것이다.
+5. 프로그램의 종료시 까지 이러한 과정이 반복된다. 
+
+이 과정에서 logging을 구현하고 싶다면,즉 객체들끼리 작동을 하는 와중에 어떠한 특정한 시점에서 log 메시지를 작성을 할때는 함수 전에, 함수 후에 또는 예외가 발생했을 때와 같은 logging을 하고싶다는 관점이 있을 것이다. -> 이것을 logging Aspect라고 부른다. 어떠한 특정한 관점에 대해서 이러한 행동을 하고 싶다고 Aspect로 정의하게 된다. 이 관점이 적용이 될 수 있는 지점들을 확인해보면 
+1. 함수가 실행되기 이전 시점에서 log를 확인할 수 있다.
+2. 함수의 반환이 일어났을 때 (return이 성공적으로 일어났을 때)도 log를 확인할 수 있다. 
+3. 예외가 발생했을 때도 log를 확인할 수 있다.
+이러한 부분들이 프로그램 실행마다 부분부분 존재할 것이다. 이렇게 관점이 들어갈 수 있는 부분을 Join Points라고 부른다. 
+Logging Aspect가 들어갈 Join Points를 정하기 위해서 PointCut이라는 것을 지정해준다. (POint Cut은 프로그래밍 코드와 비슷하게 어떤 특정한 규칙을 가진 문자열로 표현을 해준다. 이번에는 어노테이션에만 붙여줄 것이다.)
+Point Cut은 어떠한 Join Point에 Logging Aspect를 적용할 것인지에 대한 것을 지정할 수 있다. 
+Logging Aspect는 관점에 대한 것이고, 그 관점이 실행되기 위한 함수를 advice라고 한다. 즉 우리가 구현할 것은 Logging Aspect와 그 안의 advice, 그리고 그 advice가 실제로 적용될 Point Cut이다.
+
+1. aspect라는 패키지를 추가한다. aspect를 어노테이션의 형태로 적용해 볼것이다.
+1-1. LogExecutionTime이라는 어노테이션 인터페이스를 생성한다.
+이 어노테이션에 대한 속성을 어노테이션을 통해서 부여한다. -> target이라는 어노테이션을 해당 어노테이션 인터페이스위에 붙인다.
+Target이라는 어노테이션은 LogExecutionTime라는 어노테이션 인터페이스가 어떠한 곳에 붙을 수 있는 것인지를 정의해주는 것으로 METHOD로 설정하면 함수에 붙기위한 어노테이션으로 정의했다. 또한 ElementType을 통해서 파라미터 타입에 붙을 수 있게 정의할 수도 있다.
+
+
+@Target(ElementType.METHOD)
+public @interface LogExecutionTime {
+}
+
+1-2. @Retention이라는 어노테이션을 LogExecutionTime 이노테이션 인터페이스에 붙인다. @Retention이라는 어노테이션은 LogExecutionTime라는 어노테이션의 소스코드로 작성이된 어노테이션이 실제로 어느시점까지 컴퓨터 상에 존재할 것인가에 대한 어노테이션이다. 만약 프로그램을 제작을 하면 소스코드를 컴파일하고, 빌드를 하고, 실행을 하게 될 것인데, Retention에 runtime이라고 설정해줘야지 이 어노테이션이 정상적으로 작동이된다. 실제 실행중에 이 어노테이션이 어디에 붙어있는지를 SpringBoot에서 확인을 해줘야하기 때문에 RetentionPolicy를 runtime으로 정의해야 정상적으로 작동한다. 추가로 어노테이션을 만들떄는 target과 Retention이라는 어노테이션을 붙여서 어느 시점에서 어디에 붙일 수 있고, 어느 시점에 적용이 되는 것인지에 대한 정의를 해준다. 
+
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface LogExecutionTime {
+}
+
+1-3. Spring AOP같은 경우는 build.gradle의 dependenies에 web이나 jpa처럼 추가를 해줘야한다. 
+implementation 'org.springframework.boot:spring-boot-starter-aop'
+이렇게 하면 Spring에서 Aop를 할 준비가 끝났다. 
+
+1-4. LogExecutionTime이라는 어노테이션에 따라서 작동을 하기 위한 aspect를 만들어줘야한다.
+LoggingAspect라는 클래스를 생성한다. 이것 역시 Bean의 일종이기 때문에 @Component로 Bean의 일종임을 선언해준다.(스프링 프레임워크에서 사용하는 것은 전부다 Bean으로 들어간다.) 또한 Aspect라는 어노테이션을 붙여줌으로서 aspectj를 사용해서 AOP를 구현한다.(즉 Aspect를 붙여줌으로서 이 클래스가 관점이라는 것을 정의한다.) log를 표시하기 위해서 logger를 작성한다.
+@Aspect
+@Component
+public class LoggingAspect {
+    private static final Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
+}
+
+1-5. LogExecutionTime에 대한 행동(advice)을 작성한다.
+우선 함수부터 작성을 한다. 
+public Object logExecutionTime() throws Throwable{      //Throwable 은 모든 예외의 상위 인터페이스이다.
+        long startTime = System.currentTimeMillis();//실행 시간을 재야함으로
+        long execTime = System.currentTimeMillis() - startTime;
+        logger.trace("method executed in {}", execTime);
+        return null;
+    }
+이 함수는 advice 로 작동할 함수이다
+
+1-6. 이 advice 를 실제로 프로그램상에 적용을 하기 위해서 어떠한 JoinPonit 에 들어갈 지에 대한 정의를 하는 PointCut이 필요했다. 이 PointCut 또한 어노테이션으로 작성을 해준다. 즉 advice 함수 위에 어노테이션을 붙여준다.
+@Around 어노테이션은 어떠한 특정한 JoinPonit(즉 PointCut으로 설정이 된 JoinPonit)를 기준으로 그 주위에서 작동을 하게 되는 함수일 때 사용을 하는 어노테이션이다. 
+    @Around(value = "@annotation(LogExecutionTime)")  -> 은 어떤 어노테이션인데 LogExecutionTime 주변에서 일어나는 일이 밑에 있는 advice 함수이다를 선언하는 것이다. 즉, @annotation에 들어가는 이름이 실제 어노테이션의 이름과 동일해야한다. 
+    public Object logExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable{      //Throwable 은 모든 예외의 상위 인터페이스이다.
+        long startTime = System.currentTimeMillis();//실행 시간을 재야함으로
+        Object proceed = joinPoint.proceed();
+        long execTime = System.currentTimeMillis() - startTime;
+        logger.trace("method executed in {}", execTime);
+        return proceed;
+    }
+
+또한 logExecutionTime함수에 ProceedingJoinPoint joinPoint라는 인자를 제공한다. ProceedingJoinPoint같은 경우는 일반적인 JoinPonit와는 조금 다르게 (JoinPonit는 실제로 그 시점에서 일어났을 때에 대한 정의라면) proceed가 붙으면 다음에 실행되어야될 advice 또는 그 함수 자체로 진행을 한다라는 뜻이 된다. 그래서 그 결과값을 proceed로 받고, 그 사이에서 얼마나 시간이 흘렀는지를 log로 작성을 하고 돌아온 proceed를 반환한다. 이렇게 한 다음 PostController의 readPostAll 메소드에 LogExecutionTime 어노테이션을 붙이면 (추가로 logback에 logger name에 dev.aquashdw.jpa.aspect라고 설정해서 aspect의 패키지 안에서만 trace로 log를 확인한다고 설정을 해준다.) readPostAll 함수가 실행이 될 때 이 함수를 trace 로그로 실향을 하는데 얼마나 시간이 걸렸는지 같은 부분을 확인할 수 있다. 
+
+2. LogParameters라는 어노테이션 인터페이스를 만든다. 이것 역시 target과 Retention 어노테이션을 붙여주면 인터페이스가 완성된다.
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface LogParameters {
+}
+
+2-1. LoggingAspect 클래스에 @Before라는 어노테이션을 사용해서 함수를 만든다. 위 함수와 다르게 void를 반환하고 있다. 그 이유는 위 함수는 JoinPoint.proceed의 결과를 Around 어노테이션 advice 같은 경우는 logExecutionTime라는 함수가 실행되고, 실행되고 난 다음 둘다 접근을 해야하기 때문에 시작하고 나서 끝나면, 원래 함수가 반환했어야하는 값을 반환해줘야한다. 그래서 JoinPoint.proceed라는 결과를 advice 함수의 결과로서 반환을 해줘야한다. 반면에 지금은 Before PointCut으로 어떠한 시점 이전에 무슨일이 있었는지만 확인을 하고 지나가는 것이기 때문에 딱히 무언가를 반환해 주어야할 필요가 없기 때문에 void로 선언을 한다.
+    @Before(value = "@annotation(LogParameters)")
+    public void logParameters(JoinPoint joinPoint) {        // 실행되기 전에만 잠시 들렸다 돌아가는 함수이다.
+    MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();         // type 변환이 일어났는데 signature가 맞지 않는다는 오류는 함수의 인자나 반환값이 기대한 것과 다를때 문제가 발생하는데, 그러한 함수가 어떠한 모양을 가지고 있는지를 signature 라고 이야기를 하고, 그 signature를 joinPoint에서 가져오게 된다. 근데 이것이 MethodSignature인지는 JoinPoint 인터페이스 자체에는 들어가져있지 않기 때문에 type 변환이 일어나야한다.(형변환이 일아나야된다.)
+    logger.trace("method description: [{}]", methodSignature.getMethod());      ->  이렇게하면 어떠한 함수를 사용을 했는지에 대한것이 정확하게 표기가 된다.
+    logger.trace("method name: [{}]", methodSignature.getName());  -> 함수의 실제 이름이 나타날 것
+    logger.trace("declaring class: [{}]", methodSignature.getDeclaringType()); -> 실제로 그 함수가 실행되었던 class에 대한 값이 나온다.
+    Object[] arguments = joinPoint.getArgs();           -> 지금 하려는것이 annotation 이름에 parameter를 Log하겠다고 LogParameters라고 썼기 때문에 parameter를 받아야한다. 함수의 파라미터를 보면 joinPoint를 받아왔다. 어떤 함수가 실행되기 직전에 있는 joinpoint가 우리가 찾고 싶은 parameters이다. 이렇게 하면 함수에서 들어온 인자들이 arguments라는 변수 안에 들어간다. 
+            if(arguments.length == 0){
+            logger.trace("no arguments");       -> arguments 가 존재하지 않을 때 출력
+        }
+        for(Object argument: arguments){
+            logger.trace("argument[{}]", arguments);  -> arguments를 출력한다.
+        }
+
+    }
+
+그리고 나서 PostController의 createPost에다가 @LogParameters를 붙이면 이 함수를 포함하고 있는 패키지 명과 어떠한 클래스의 함수인지, 그리고 인자로 무엇을 받는지 같은 부분이 나타난다.
+
+3. @AfterReturning 은 반환값이 존재하는 함수에 대해서 PointCut을 지정을 해 줄 수 있다. (void 타입이여도 상관은 없지만 기본적으로 반환값을 받아오기 위해서 사용하는 것이다.)
+이 함수를 정의하기 위해 LogReturn 이라는 어노테이션 인터페이스를 만든다. 인터페이스를 만든 다음 이 함수를 정의한다.
+@AfterReturning(value = "@annotation(LogReturn)", returning = "returnValue")
+    public void logResults(JoinPoint joinPoint, Object returnValue ){      // 위에 있던 함수들이랑 첫 인자는 같다 하지만 두번째 인자에는 반환하는 값을 이 함수에다가 AutoWired 를 시켜줘야한다. 어떤 인자에다가 AutoWired 를 시켜줄지 정하기 위해서 returning 이라는 부분이 들어간다. 이렇게 하면 AfterReturning 이라는 어노테이션을 읽어서 returnVlaue라는 이름을 가진 인자에다가 반환값을 대입 해준다.
+        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+        logger.trace("method name: [{}]", methodSignature.getName());
+        logger.trace("return type: [{}]", methodSignature.getReturnType());
+        logger.trace("return value: [{}]", returnValue);
+    }
+
+이렇게 하면  LogReturn이라는 어노테이션에 대한 Aspect advice가 모두 정의가 되었다. PostController에서 return값이 존재하는 함수인 readPost에 @LogReturn 어노테이션을 붙인다.

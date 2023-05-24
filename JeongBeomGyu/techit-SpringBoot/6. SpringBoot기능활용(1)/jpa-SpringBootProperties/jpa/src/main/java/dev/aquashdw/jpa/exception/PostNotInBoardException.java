@@ -2,8 +2,8 @@ package dev.aquashdw.jpa.exception;
 
 
 
-public class InconsistentDataException extends BaseException {
-    public InconsistentDataException(){
+public class PostNotInBoardException extends BaseException {
+    public PostNotInBoardException(){
         super("Post not in board");
     }
 }
