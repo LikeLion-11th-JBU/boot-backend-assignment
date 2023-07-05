@@ -1,0 +1,16 @@
+spring:
+  profiles:
+    active: local
+
+logging:
+  level:
+    root: warn
+    jym.yeongmu: info
+
+custom:
+  property:
+    single: custom-property
+    comlist: comma,separated,list,to,value
+    ncp: api-i
+    key: api-key
+    url: https://ncp.com/
