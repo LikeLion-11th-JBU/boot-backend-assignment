@@ -1,0 +1,51 @@
+# 챕터 6-2 Logging부분 20분부터는 우분투나 mac os 쓰는사람만.
+spring:
+  profiles:
+    active: test
+
+logging:
+  # 로그 레벨이 가지는 의미 등이나 여기까지 강의 내용은 다 할 수 있어야 한다 (ㅠㅠ)
+  level:
+    root: warn
+    # 로그 레벨 조정 가능
+    com.example: info
+    # 프로젝트 상용화 단계에서 무슨 로그가 뜨는지 궁금하다면 루트와 같은 계층에 패키지 이름으로 작성하면 된다.
+
+custom:
+  property:
+    single: custom-property
+    comlist: comma, separated, list, to, value
+    ncp:
+      id: api-id
+      key: api-key
+      url: https://ncp.com/
+
+#
+## 이미 만들어진 설정을 여러개로 복사해서 하나의 문서에 정의를 하는 방법
+#spring:
+#  profiles:
+#    active: local
+#    # 어떤 profiles가 active한지, 어떤 profiles를 사용해서 application을 실행할지 정의하는 부분
+#---
+#spring:
+#  config: # 설정
+#    activate: # 실행
+#      on-profile: test
+#      # 현재 profile이 local일 때, 실행하는 설정이라는 의미
+#  datasource:
+#    driver-class-name: org.h2.Driver
+#    url: jdbc:h2:mem:testdb
+#    username: sa
+#    password: password
+#  jpa:
+#    hibernate:
+#      # jpa는 Annotation들의 라이브러리, hibernate에서 실제로 이것들을 사용
+#      ddl-auto: create
+#    # ddl-auto 테이블을 생성하고 제거하는 과정을 자동을 해주는 옵션
+#    # 상용환경에서는 update , 일반적인 상황에서는 none , 우리는 지금 테스트니까 create 로!
+#    show-sql: true
+#    # jpa가 작동하면서 실제로 실행하는 sql문들을 보여줄것인지 보여주는 옵션
+#    properties:
+#      hibernate:
+#        dialect: org.hibernate.dialect.H2Dialect
+#        # mysql을 사용함을 hibernate에게 명시해줌

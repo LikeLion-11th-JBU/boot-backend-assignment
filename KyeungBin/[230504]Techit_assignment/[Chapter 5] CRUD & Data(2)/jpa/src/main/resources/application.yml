@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/demo_jpa_schema
+    username: demo_jpa
+    password: kkb00714
+  jpa:
+    hibernate:
+    # jpa는 Annotation들의 라이브러리, hibernate에서 실제로 이것들을 사용
+      ddl-auto: create
+    # ddl-auto 테이블을 생성하고 제거하는 과정을 자동을 해주는 옵션
+    # 상용환경에서는 update , 일반적인 상황에서는 none , 우리는 지금 테스트니까 create 로!
+    show-sql: false
+    # jpa가 작동하면서 실제로 실행하는 sql문들을 보여줄것인지 보여주는 옵션
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        # mysql을 사용함을 hibernate에게 명시해줌
