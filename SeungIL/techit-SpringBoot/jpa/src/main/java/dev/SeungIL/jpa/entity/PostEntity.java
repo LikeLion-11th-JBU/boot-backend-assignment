@@ -12,22 +12,22 @@ public class PostEntity extends BaseEntity{
     private String content;
     private String writer;
 
-    @ManyToOne(
-            targetEntity = BoardEntity.class,
-            fetch = FetchType.LAZY
-    ) // 다대일 관계
-    @JoinColumn(name = "board_id")
-    private BoardEntity boardEntity; // Board Entity와 연관관계가 있음을 표현.
+//    @ManyToOne(
+//            targetEntity = BoardEntity.class,
+//            fetch = FetchType.LAZY
+//    ) // 다대일 관계
+//    @JoinColumn(name = "board_id")
+//    private BoardEntity boardEntity; // Board Entity와 연관관계가 있음을 표현.
 
     public PostEntity() {
     }
 
-    public PostEntity(Long id, String title, String content, String writer, BoardEntity boardEntity) {
+    public PostEntity(Long id, String title, String content, String writer ) {
         this.id = id;
         this.title = title;
         this.content = content;
         this.writer = writer;
-        this.boardEntity = boardEntity;
+
     }
 
     public Long getId() {
@@ -62,13 +62,8 @@ public class PostEntity extends BaseEntity{
         this.writer = writer;
     }
 
-    public BoardEntity getBoardEntity() {
-        return boardEntity;
-    }
 
-    public void setBoardEntity(BoardEntity boardEntity) {
-        this.boardEntity = boardEntity;
-    }
+
 
     @Override
     public String toString() {
@@ -77,7 +72,7 @@ public class PostEntity extends BaseEntity{
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
                 ", writer='" + writer + '\'' +
-                ", boardEntity=" + boardEntity +
+
                 '}';
     }
 }

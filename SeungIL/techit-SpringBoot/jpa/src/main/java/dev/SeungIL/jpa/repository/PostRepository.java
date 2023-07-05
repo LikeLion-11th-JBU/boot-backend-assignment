@@ -1,13 +1,11 @@
 package dev.SeungIL.jpa.repository;
 
-import dev.SeungIL.jpa.entity.BoardEntity;
 import dev.SeungIL.jpa.entity.PostEntity;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.List;
 
+import org.springframework.data.repository.CrudRepository;
+
 public interface PostRepository extends CrudRepository<PostEntity, Long> {
-    List<PostEntity> findAllByWriter(String writer); // where writer = ?
-    List<PostEntity> findAllByWriterAndBoardEntity(String writer, BoardEntity boardEntity); // where writer =? and board_entity_id = ?
-    List<PostEntity> findAllByWriterContaining(String writer);
 }
