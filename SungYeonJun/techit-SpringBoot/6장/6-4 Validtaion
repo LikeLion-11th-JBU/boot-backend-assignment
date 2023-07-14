@@ -1,0 +1,103 @@
+저희는 Spring Boot를 공부하면서 Backend 서버로서의 역할에 집중해 왔습니다. `@RestController` 에 정의된 `@RequestMapping` 을 만들면서, 사용자의 데이터를 받는 역할을 하게 됩니다. 저희가 만든 `PostDto` 를 살펴봅시다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/85ff5957-d35d-4cef-a874-877acd6571c3/Untitled.png)
+
+위의 DTO는 자료형만 맞는다면 그대로 저희 서버로 들어오게 됩니다. 만약 여기에 `title` 길이의 제한이나, `null` 외의 값이 들어와야 한다는 등의 조건이 생기게 된다면 어떻게 검증해야 할까요?
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/bacd0012-9669-4e62-af3b-4045499cf076/Untitled.png)
+
+제목은 `null` 이 아니며 비어있지 않다, 본문의 길이는 400자 이하이다, 등의 조건을 일일이 조건문으로 확인하는 모습입니다. 보아도 매우 귀찮은 작업입니다. 하지만 이를 단순하게 넘겨짚고 진행하게 된다면, 데이터베이스에 불충분한 데이터가 입력되거나, 상황에 따라 SQL Injection 등의 공격이 발생할 수도 있는 부분입니다. 어디선가 들어보았을 통념, ‘사용자 입력을 믿지 말라'는 말과 일맥상통하는 이야기이기도 합니다. 이런 사용자 입력등의 데이터를 검증하여 사전에 방지하는 작업을 Validation이라 부릅니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/88238e7f-f81e-4db9-9c12-4272f1ad5de7/Untitled.png)
+
+Spring Boot에서는 이런 사용자 입력 등의 데이터 검증을 위해서 **Jakarta Bean Validation** 프로젝트의 어노테이션을 활용해서 Validation이 필요한 데이터 항목을 정의합니다. 실제로 Validation을 진행하는 라이브러리는 **Hibernate Validator** 입니다. 이 Hibernate Validator와 Jakarta Bean Validation의 관계는 Jakarta Persistence (JPA)와 Hibernate의 관계와 유사합니다. Hibernate Validator는 Jakarta Bean Validation이 가리키는 검증 대상을 실제로 검증하는 방식이 정의된 라이브러리라고 보면 됩니다.
+
+## Validation 적용해보기
+
+저희가 만들어둔 `PostDto` 에 다양한 어노테이션을 통해 사용자 입력을 검증하고, 새로 테스트용 DTO를 만들어서 햇갈리기 쉬운 몇몇 어노테이션을 알아보도록 합시다.
+
+### Validation Dependencies
+
+Validation을 위한 의존성 역시 한가지입니다.
+
+```java
+implementation 'org.springframework.boot:spring-boot-starter-validation'
+```
+
+Spring Boot Starter 의존성들이 대개 그렇듯, 해당 의존성을 추가하면 Jakarta Validation과 Hibernate Validator가 모두 포함됩니다.
+
+### PostDto 수정
+
+`PostDto` 의 멤버변수에 저희가 원하는 조건을 적용하여 어노테이션을 작성해 봅시다.
+
+```java
+private int id;
+@NotNull
+private String title;
+
+@Size(max = 40, message = "size under 40")
+private String content;
+
+@Size(min = 3, max = 10, message = "size between 3 - 10")
+private String writer;
+private int boardId;
+```
+
+`@Size` 어노테이션을 문자열에 부여하였습니다. 이름과 인자에서 유추할 수 있듯이, `@Size` 에 주어진 길이를 만족시키는 값만 해당 변수에 적용될 수 있습니다. `@Size` 는 배열, 문자열, `Collection` , `Map` 에 적용할 수 있습니다.
+
+`@NotNull` 또한 사용하여 `title` 에 부여한 상태입니다. `@NotNull` 의 경우 해당 값이 `null` 이지 않을것을 검증하는 어노테이션입니다.
+
+`@Size` 와 `@NotNull` 둘다 `message` 인자를 전달할 수 있는데, 이 `message` 의 경우 실제 실행단계에서 문제가 발생하게 될 경우 어떤 메시지가 나오는지를 조정하기 위한 인자입니다. `PostDto` 의 데이터를 검증하는 과정에서, `content` 의 길이가 40이 넘어갈 경우, `size under 40` 이라는 형태로 메시지를 반환하게 된다는 의미입니다.
+
+`Jakarta Validation` 에서 제공하는 수많은 어노테이션들이 존재하는데,
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/be4d056a-c634-4395-bf7b-613252cac8d7/Untitled.png)
+
+어떤 데이터를 기대하고 있는지에 따라 reference를 참조하여 Validation을 진행합시다.
+
+### @Valid 사용
+
+실제로 사용하는 단계에서 해당 값들이 검증되었는지를 입증하고 싶다면 `@Valid` 어노테이션을 사용하면 됩니다. Spring Boot에서는 대표적으로 `@RequestMapping` 의 매개변수에 적용할 수 있습니다. `PostController` 의 `createPost()` 함수에,
+
+```java
+@PostMapping()
+@ResponseStatus(HttpStatus.CREATED)
+public void createPost(@Valid @RequestBody PostDto dto){
+    this.postService.createPost(dto);
+}
+```
+
+`PostDto` 에 `@Valid` 어노테이션을 추가한것을 확인할 수 있습니다. `@Valid` 어노테이션이 존재하는 인자는 함수의 실행단계에서 데이터 검증을 하게 됩니다. 여기서는 `PostDto` 의 내부의 인자들에 부여된 `@Size` , `@NotNull` 어노테이션 등에 대한 검증이 진행됩니다. 이때 저희가 지정한 조건을 만족하지 않는 데이터가 할당된 인자인 경우,
+
+```java
+Resolved [org.springframework.web.bind.MethodArgumentNotValidException
+```
+
+예외가 발생하게 됩니다.
+
+### NotNull, NotBlank, NotEmpty
+
+Validation을 진행하는 과정에서 문자열 데이터 검증을 하게될때, 위의 세가지 어노테이션이 전부 존재다는 점을 확인할 수 있습니다. 전부 데이터가 실제로 존재하는지에 대한 여부와 연관된 어노테이션인데, 작동하는 기준이 조금씩 다르게 됩니다. 이를 확인하기 위해 새로운 DTO를 정의하고 `@RequestBody` 로 데이터를 받는 `@RequestMapping` 을 만들어 봅시다.
+
+```java
+public class ValidTestDto {
+    @NotNull  // 변수가 null이냐 아니냐
+    private String notNullString;
+    @NotEmpty // null이 아니면서, Object.size() > 0
+    private String notEmptyString;
+    @NotBlank // 공백이 아닌 문자열 "     "
+    private String notBlankString;
+
+    @NotEmpty // null이 아니면서, Object.size() > 0
+    private List<String> notEmptyStringList;
+		...
+```
+
+```java
+@PostMapping("test-valid")
+public void testValid(@Valid @RequestBody ValidTestDto dto) {
+    logger.warn(dto.toString());
+}
+```
+
+위와같은 형태로 데이터를 구성하고 데이터를 조금씩 변경해가면서 Validation이 어떻게 진행되는지 확인해 봅시다.

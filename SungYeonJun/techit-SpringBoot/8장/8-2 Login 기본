@@ -1,0 +1,209 @@
+Spring Boot에서 로그인을 구현하기 위해 의존성을 먼저 추가해 줍시다.
+
+```groovy
+implementation 'org.springframework.boot:spring-boot-starter-security'
+implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity5'
+```
+
+각각 살펴보면, `spring-boot-starter-security` 의 경우 기본적인 보안 관련 기능을 모아두는 라이브러리 입니다. 이 라이브러리를 추가하고 Spring Boot Application을 실행하게 될 경우, 여태까지 사용했던 endpoint들이 정상작동 하지 않는다는걸 알 수 있을겁니다.
+
+```json
+{
+    "timestamp": "2022-02-27T01:09:29.048+00:00",
+    "status": 401,
+    "error": "Unauthorized",
+    "path": "/board/1/post/1"
+}
+```
+
+Status 401의 경우, 요청을 보낸 사용자가 자신이 누구인지를 증명하지 못하였다는 의미입니다. 참고로 비슷한 오류인 403(Forbidden)은, 사용자가 누구인지는 입증이 되었으나, 그 사용자가 현재의 요청을 할 권한이 없음을 의미합니다.
+
+이제 Spring Security 라이브러리의 기능을 활용하여 기본 보안 설정을 조정, URL에 따른 접속 권한 조절과 함깨, 로그인 페이지를 구성하게 됩니다.
+
+## 로그인 과정
+
+일반적으로 사용자가 로그인을 하게되는 과정에 대해 살펴보면,
+
+1. 로그인 페이지 접근
+2. 로그인에 필요한 ID, 비밀번호 제공
+3. Cookie에 사용자의 session id를 작성
+4. session id를 가진 요청에 대하여 사용자 검증
+
+와 같이 이뤄집니다.
+
+## WebSecurityConfigurerAdapter
+
+Security를 구성하기 위해서는 `WebSecurityConfiguererAdapter`를 사용하게 됩니다.
+
+```java
+@Configuration
+@EnableWebSecurity
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        
+    }
+}
+```
+
+`WebSecurityConfigurerAdapter` 에 정의된 `configure(HttpSecurity http)` 함수를 이용해, Spring Boot에서 사용하게 될 보안 설정을 정의할 수 있습니다.
+
+```java
+@Configuration
+@EnableWebSecurity
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .authorizeRequests()
+                .anyRequest()
+                .permitAll()
+        ;
+    }
+}
+```
+
+이때 빌더(Builder) 패턴과 유사하게 `HttpSecurity` 의 내용을 구성하게 됩니다. `HttpSecurity` 객체 내부에 정의된 다양한 함수를 사용하면, 특정 역할에 대한 구성을 변경할 수 있습니다. 위의 예시의 경우,
+
+- `.authorizeRequests()` : 특정 URL에 대한 접근 권한을 설정하기 시작합니다.
+- `.anyRequest()` : 모든 URL 요청에 대한 설정을 진행합니다.
+- `.permitAll()` : 설정된 URL에 대하여, 누구든 접속 가능하게 설정합니다.
+
+의 형태로 진행하게 됩니다. 이번에는 해당 설정을 아래와 같이 변경해 봅시다.
+
+```java
+@Configuration
+@EnableWebSecurity
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .authorizeRequests()
+                .antMatchers("/board/*/post/**")
+                .authenticated()
+                .antMatchers("/board/*")
+                .permitAll();
+    }
+}
+```
+
+여기에선 첫줄의 `.authorizeRequests()` 는 동일합니다. URL 패턴을 기준으로 접근 권한의 관리를 시작합니다. `.authorizeRequests()` 다음 두 줄의 역할은,
+
+- `antMatchers()` : 주어진 URL 패턴을 기준으로 설정을 진행합니다.
+- `authenticated()` : 로그인 된 대상만 접속이 가능하게 설정합니다.
+
+이때 기억하실건, 각각이 별개의 함수 호출로 진행된다는 점입니다. 그리고 `authenticated()` 의 호출은, `.authorizedRequests()` 의 함수 호출과 동일한 객체를 반환합니다. 그래서 그 위치에서, 본래 했던것과 유사하게 추가 설정을 전달할 수 있습니다.
+
+- `antMatchers()` : 주어진 URL 패턴을 기준으로 설정을 진행합니다.
+- `permitAll()` : 누구든지 접속 가능하게 설정합니다.
+
+이렇게 사용자의 인증 상태에 따라 다양한 URL에 대한 접근 권한을 설정합니다. 설정을 마무리한 후, 다른 보안 관련 설정을 진행하고자 한다면, `.and()` 함수를 호출하면 됩니다. 그러면 다시 `HttpSecurity` 객체가 반환되어, `authorizeRequests()` 가 아닌 다른 설정을 진행할 수 있습니다.
+
+```java
+@Configuration
+@EnableWebSecurity
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .authorizeRequests()
+                .antMatchers("/board/*/post/**")
+                .authenticated()
+                .antMatchers("/board/*")
+                .permitAll()
+						.and()
+								.formLogin();
+    }
+}
+```
+
+## .formLogin()
+
+`.formLogin()` 은 일반적인 Login 페이지를 만들기 위한 설정의 모음입니다.
+
+```java
+@Configuration
+@EnableWebSecurity
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .authorizeRequests()
+                .antMatchers("/board/*/post/**")
+                .authenticated()
+                .antMatchers("/board/*")
+                .permitAll()
+						.and()
+								.formLogin()
+								.loginPage("/user/login")
+                .defaultSuccessUrl("/home")
+                .permitAll();
+    }
+}
+```
+
+`.authorizeRequests()` 와 마찬가지로, `.formLogin()` 부터 진행하여, 로그인 페이지, 로그인 처리 URL 등을 설정할 수 있습니다. 만약 설정하지 않는다면 기본값을 사용하게 됩니다.
+
+- `.loginPage()` : 로그인 페이지로 가게되는 URL을 정의합니다.
+- `.defaultSuccessUrl()` : 로그인에 성공했을때 보내지는 URL을 정의합니다.
+
+이 외에도 다양한 설정들이 가능합니다. 기본적인 로그인 과정에서, 변경이 필요한 부분에 대하여, 필요한 함수를 찾아 변경하면 됩니다.
+
+## .logout()
+
+`.formLogin()` 과 비슷하게, `.and()` 이후로 `.logout()` 을 활용하면 로그아웃 기능 또한 쉽게 구현이 가능합니다.
+
+```java
+@Configuration
+@EnableWebSecurity
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+				http
+                .authorizeRequests()
+                .antMatchers("/board/**")
+                .authenticated()
+                .antMatchers("/board/*")
+                .permitAll()
+            .and()
+                .formLogin()
+                .loginPage("/user/login")
+                .defaultSuccessUrl("/home")
+                .permitAll()
+            .and()
+                .logout()
+                .logoutUrl("/user/logout")
+                .logoutSuccessUrl("/home")
+                .deleteCookies("JSESSIONID")
+                .invalidateHttpSession(true)
+                .permitAll();
+    }
+}
+```
+
+앞서 사용한 `.authorizeRequests()` 이후 필요한 설정들을 하나씩 함수 형태로 정의하듯, `.logout()` 역시 마찬가지 입니다.
+
+- `.logoutUrl()` : 로그아웃 요청을 보낼 URL을 정합니다. 이 URL로 POST 요청이 들어온 브라우저에 로그인과 관련된 정보가 사라집니다.
+- `.logoutSuccessUrl()` : 로그아웃 성공시 이동할 URL입니다.
+- `.deleteCookies()` : 로그아웃시 삭제할 쿠키를 지정해 줍니다.
+- `.invalidateHttpSession()` : 로그아웃 했을때, `HttpSession` 을 유효하지 않도록 하기 위해 설정합니다.
+
+여기서 `.logoutSuccessUrl()` 같은 경우, 해당 URL로 POST 요청을 보내는 버튼은 HTML 상에 직접 만들어야 합니다.
+
+## 로그인 상태에 따른 화면 구분
+
+로그인 여부에 따라 보여지는 화면이 변하게 하는건 여러가지 방법이 있습니다. 기본적으로, Cookie에 저장된 session id 를 기준으로, 사용자가 로그인 했는지 안했는지를 구분하면 됩니다. 이는 반드시 Spring Boot에서 할 필요가 있는것은 아니지만, 굳이 한다면 서버에서 진행할 수도 있습니다.
+
+Spring Boot의 기본 템플릿 언어는 thymeleaf 임으로, thymeleaf를 이용하여 로그인 여부에 따른 페이지 변화를 줘봅시다.
+
+```html
+<body>
+    <h1>Simple_Login</h1>
+    <h3 sec:authorize="isAuthenticated()">반갑습니다. <span sec:authentication="name"></span>님!</h3>
+    <hr>
+    <a sec:authorize="isAnonymous()" th:href="@{/user/login}">로그인</a>
+    <a sec:authorize="isAuthenticated()" th:href="@{/user/logout}">로그아웃</a>
+    <a sec:authorize="isAnonymous()" th:href="@{/user/sign-up}">회원가입</a>
+</body>
+```

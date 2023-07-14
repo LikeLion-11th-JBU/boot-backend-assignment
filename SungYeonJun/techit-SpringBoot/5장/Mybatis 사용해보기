@@ -1,0 +1,344 @@
+앞서 이야기했듯, 데이터베이스는 Spring Boot를 비롯한 웹 어플리케이션과는 별개의 소프트웨어로 동작합니다. 정확하게 말하면, Java를 이용해 데이터베이스와 소통할때는, JDBC라는 API를 이용해 데이터베이스에 SQL을 보내게 됩니다. 일반적으로 어플리케이션 개발을 진행하는 경우, JDBC를 직접 사용하여 데이터베이스를 활용하는 것은 복잡하고, 개발하는데 시간소모가 크기 때문에, 다른 도구를 이용해서 DB에 접속하게 됩니다. 대표적으로 MyBatis가 있습니다.
+
+MyBatis는 SQL Mapper의 일종이라고 부르기도 합니다. 이는 MyBatis의 기본 동작방식이 Java의 함수에 SQL 질의문을 연결지어서 활용하기 때문입니다. 저희가 Java 함수를 정의하고, MyBatis가 요구하는 방법대로 해당 함수와 SQL 선언문을 연결하게 되면 해당 함수를 호출할때 SQL의 결과를 받아올 수 있다는 의미입니다. 이때 SQL 선언문에 필요한 데이터 등을 함수의 인자로 전달하게 됩니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/53617039-127a-4406-aca9-ebb812aa231a/Untitled.png)
+
+데이터베이스의 결과는 테이블 (또는 Relation)의 형태로 전달되게 됩니다. 이러한 결과를 다루기 위해 MyBatis에서는 데이터를 표현한 Java class를 활용합니다. 저희가 일반적으로 하나의 객체라고 이야기하고 다루게 되는 단위를, 테이블의 하나의 Row, 또는 기록과 연결해서 결과를 제공합니다. 즉 SQL의 결과로 나오는 테이블의 하나의 Row가 하나의 DTO 객체로 제공되는 것입니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/35457d0f-866e-4742-b2b5-98ad87814fb6/Untitled.png)
+
+Java 함수에 연결할 SQL은 다양한 방법으로 정의할 수 있지만, 대표적으로 XML 파일을 사용합니다. 저희가 사용하게 되면 `resources` 폴더에 `*.xml` 의 형태로 파일을 만들고, Java 상에 정의된 `interface`의 함수와 연결될 수 있도록 XML element의 속성의 형태로 어떤 interface의 어떤 함수인지를 정의하여 사용하게 됩니다. 이후 데이터베이스와 연결하면, 해당 interface 형태의 객체를 내부적으로 만들어서 전달하여 코드 상에서 사용할 수 있도록 합니다.
+
+## MyBatis로 데이터베이스 사용해보기
+
+기본적인 작동 방식과 원리를 알았다면 Spring Boot 프로젝트에서 MyBatis를 사용해 봅시다.
+
+### 의존성 추가
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/20dc4b01-ca9d-4689-97c5-f08fdb3e975b/Untitled.png)
+
+```groovy
+ dependencies {
+ 	implementation 'org.springframework.boot:spring-boot-starter-web'
+ 	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:2.2.2'
+ 	runtimeOnly 'mysql:mysql-connector-java'
+ 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+ }
+```
+
+Spring Initializr를 사용한다면 MyBatis Framework와 MySQL Driver를 포함시켜서 프로젝트를 생성해주면 됩니다. 그럼 의존성들이 `build.gradle` 에 추가됩니다.
+
+### 데이터베이스 준비
+
+MyBatis는 SQL을 전달하는 역할을 하는 Framework이기 때문에, SQL을 직접적으로 전달하는것 외의 작업은 거의 하지 않습니다. 따라서 MyBatis를 사용하기 전에 데이터베이스에 테이블을 생성하는 등의 작업은 개발자가 직접 해야 됩니다. MySQL Workbench에서 
+
+```sql
+ CREATE TABLE `post` (
+   `id` int NOT NULL AUTO_INCREMENT,
+   `title` varchar(45) NOT NULL,
+   `content` varchar(45) NOT NULL,
+   `writer` varchar(45) NOT NULL,
+   `board` int DEFAULT NULL,
+   PRIMARY KEY (`id`)
+ ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ CREATE TABLE `board` (
+   `id` int NOT NULL AUTO_INCREMENT,
+   `name` varchar(45) NOT NULL,
+   PRIMARY KEY (`id`)
+ ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+를 실행하면 테이블이 두개 생성됩니다.
+
+### DTO 정의하기
+
+우선 MyBatis에서 Row 데이터를 표현하기 위한 DTO 클래스를 만들어 봅시다.
+
+```java
+ public class PostDto {
+     private int id;
+     private String title;
+     private String content;
+     private String writer;
+     private int board;
+		...
+}
+```
+
+```sql
+ public class BoardDto {
+     private int id;
+     private String name;
+		...
+ }
+```
+
+이 DTO 클래스는 테이블의 결과를 받아올때 사용할수도 있고, 사용자 요청의 Body의 형태로도 활용할 수 있습니다.
+
+### Mapper 인터페이스와 XML
+
+먼저 아무 함수도 포함하고 있지 않은 `PostMapper` 와 `BoardMapper` 를 만들어 봅시다.
+
+```java
+ public interface PostMapper {}
+```
+
+```java
+ public interface BoardMapper {}
+```
+
+이 인터페이스 들은 이제 SQL을 연결할 함수들을 정의하기 위한 인터페이스 입니다. 여기에 연결할 SQL은 XML상에 정의해야 합니다. 이 XML을 resources에 생성해 줍니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/00d30992-e923-4a12-a8e2-8822df6646bc/Untitled.png)
+
+```xml
+ <?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="dev.aquashdw.mybatis.mapper.PostMapper">
+ 
+ </mapper>
+```
+
+이런 형태의 XML 파일입니다. 기본적으로 가장 겉의 Element는 `mapper` 로서, 저희가 정의한 interface 중 어떤 interface를 사용할지를 전달해 줄 수 있습니다. 여기에 어떤 작업을 위한 SQL인지를 나타내는 `select`, `insert` 등의 Element로 SQL을 작성할 수 있습니다.
+
+```xml
+ <mapper namespace="dev.aquashdw.mybatis.mapper.PostMapper">		
+ 		<insert id="createPost" parameterType="dev.aquashdw.mybatis.dto.PostDto">
+         insert into POST(title, content, writer, board)
+         values (#{title}, #{content}, #{writer}, ${board})
+     </insert>
+		...
+```
+
+여기서 `insert` 의 속성 `id` 는 `PostMapper`의 함수를 가리키는 속성입니다. `PostMapper` 인터페이스 내부의 `createPost` 함수에 해당 SQL을 연결하겠다는 의미입니다. `parameterType` 은 이 SQL에서 사용할 데이터를 받아오기 위한 클래스를 의미합니다. 지금은 앞서 생성했던 `PostDto` 입니다. 이제 `PostMapper` 에 `createPost` 함수를 아래처럼 정의하면,
+
+```java
+public interface PostMapper {
+    int createPost(PostDto dto);
+}
+```
+
+MyBatis가 제공해준 `PostMapper` 객체의 `createPost` 함수가 위의 SQL을 실행하게 됩니다.
+
+`<insert>` 내부의 SQL 쿼리를 확인하면 `values (#{title}, #{content}, #{writer}, ${board})` 같은 부분이 있습니다. 여기에는 본래 insert 하고자 하는 데이터가 들어가는 부분인데, 이를 저희가 제공하기 위해서 상기와 같이 작성하게 됩니다. 여기서
+
+- `#{title}` : 전달받은 DTO의 `title` 멤버변수를 SQL 문자열로 대치
+- `${board}` : 전달받은 DTO의 `board` 멤버변수를 값 그대로 SQL 내부의 대치
+
+하게 됩니다. 즉 함수의 인자로 전달된 DTO의 내용이
+
+```java
+.getTitle() == "Hello MySQL!";
+.getBoard() == 1;
+```
+
+와 같은 형태라면 (content, writer 생략) 데이터베이스에 전달될 SQL은
+
+```java
+insert into post(title, content, writer, board)
+values ('Hello MySQL!', 'This is my first post', 'aquashdw', 1);
+```
+
+와 같이 대치되어 전달되는 것입니다. `#` 이 붙으면 `'` 로 감싼 형태로, 붙지 않으면 감싸지 않은 형태로 전달된다고 생각하면 됩니다.
+
+이후 CRUD에서 활용하기 위한 나머지 SQL과 그에 맞는 함수를 만들어 봅시다.
+
+- `post-mapper.xml` , `PostMapper.java`
+    
+    ```xml
+    <?xml version="1.0" encoding="UTF-8" ?>
+    <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+            "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    <mapper namespace="dev.aquashdw.mybatis.mapper.PostMapper">
+        <insert id="createPost" parameterType="dev.aquashdw.mybatis.dto.PostDto">
+            insert into POST(title, content, writer, board)
+            values (#{title}, #{content}, #{writer}, ${board})
+        </insert>
+        <select
+                id="readPost"
+                parameterType="int"
+                resultType="dev.aquashdw.mybatis.dto.PostDto">
+            select * from post where id = ${id}
+        </select>
+        <select id="readPostAll" resultType="dev.aquashdw.mybatis.dto.PostDto">
+            select * from post
+        </select>
+        <update id="updatePost" parameterType="dev.aquashdw.mybatis.dto.PostDto">
+            update post
+            set
+                title = #{title},
+                content = #{content},
+                writer = #{writer},
+                board = ${board}
+            where id = ${id}
+        </update>
+        <delete id="deletePost" parameterType="int">
+            delete from post where id = ${id}
+        </delete>
+    </mapper>
+    ```
+    
+    ```java
+    package dev.aquashdw.mybatis.mapper;
+    
+    import dev.aquashdw.mybatis.dto.PostDto;
+    
+    import java.util.List;
+    
+    public interface PostMapper {
+        int createPost(PostDto dto);
+        PostDto readPost(int id);
+        List<PostDto> readPostAll();
+        int updatePost(PostDto dto);
+        int deletePost(int id);
+    }
+    ```
+    
+
+### DAO 만들기
+
+Mybatis를 사용하면서 DAO는 필수는 아닙니다. 하지만 객체지향 사고에 따라, 데이터와 직접적으로 소통하는 객체는 하나로 유지하고, Spring IoC에서 별도로 관리할 수 있도록 `@Repository` 를 붙여줍시다.
+
+```java
+ @Repository
+ public class PostDao {
+     private final SqlSessionFactory sessionFactory;
+
+     public PostDao(
+             @Autowired SqlSessionFactory sessionFactory
+     ) {
+         this.sessionFactory = sessionFactory;
+     }
+
+     public int createPost(PostDto dto){
+         try (SqlSession session = sessionFactory.openSession()){
+             PostMapper mapper = session.getMapper(PostMapper.class);
+             return mapper.createPost(dto);
+         }
+     }
+
+     public PostDto readPost(int id){
+         try (SqlSession session = sessionFactory.openSession()){
+             PostMapper mapper = session.getMapper(PostMapper.class);
+             return mapper.readPost(id);
+         }
+     }
+
+     public List<PostDto> readPostAll(){
+         try (SqlSession session = sessionFactory.openSession()){
+             PostMapper mapper = session.getMapper(PostMapper.class);
+             return mapper.readPostAll();
+         }
+     }
+
+     public int updatePost(PostDto dto){
+         try (SqlSession session = sessionFactory.openSession()){
+             PostMapper mapper = session.getMapper(PostMapper.class);
+             return mapper.updatePost(dto);
+         }
+     }
+
+     public int deletePost(int id){
+         try (SqlSession session = sessionFactory.openSession()){
+             PostMapper mapper = session.getMapper(PostMapper.class);
+             return mapper.deletePost(id);
+         }
+     }
+ }
+```
+
+여기서 `SqlSessionFactory` 객체는, Mybatis Framework를 추가하면 자동으로 Spring IoC에서 관리를 해주는 데이터베이스와의 연결을 주체하는 객체입니다. 각각의 함수를 살펴보면, `sessionFactory.openSession()` 의 형태로 `SqlSession` 을 받아오게 되는데, 이 `SqlSession` 객체가 데이터베이스와의 연결을 나타내는 객체입니다. 이후 `session.getMapper(PostMapper.class)` 를 사용하면, 저희가 정의했던 `PostMapper` 인터페이스 형태의 객체를 반환하는데, 이 인터페이스를 사용함으로서 XML에 정의했던 SQL을 실행할 수 있습니다.
+
+## MyBatis 제어문
+
+MyBatis는 XML을 이용하여 SQL을 정의하는데, SQL을 전달하기 전에 element를 활용하여 `for` 반복이나 `if` 조건등을 이용하여 동적 SQL 질의문을 만들 수 있습니다. 아래의 두 `insert` 와 `select` 를 확인해 보면,
+
+```xml
+...
+    <insert id="createPostAll"
+            parameterType="dev.aquashdw.mybatis.dto.PostDto">
+        insert into POST(title, content, writer, board)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.title}, #{item.content}, #{item.writer}, ${item.board})
+        </foreach>
+    </insert>
+    <select
+            id="readPostQuery"
+            parameterType="dev.aquashdw.mybatis.dto.PostDto"
+            resultType="dev.aquashdw.mybatis.dto.PostDto">
+        select * from post
+        where title = #{title}
+        <if test="writer != null">
+            and writer = #{writer}
+        </if>
+    </select>
+...
+```
+
+와 같이 사용할 수 있습니다. `foreach` element의 속성들을 살펴보면
+
+- `collection` : 어떤 데이터를 받아서 반복할 것인지
+- `item` : 해당 데이터 하나의 이름 (안쪽의 SQL에서 사용할)
+- `separator` : 각 줄을 반복할때 사이에 작성할 구분자
+
+의 형태로 작성할 수 있습니다. `createPostAll` 의 경우 `PostMapper`의 함수 인자로 `List`를 전달하면 됩니다.
+
+```java
+ int createPostAll(List<PostDto> dtoList);
+```
+
+`if` 의 경우 `test` 에 주어진 조건을 만족하는지 안하는지를 기준으로, 내부의 SQL을 추가할지 말지를 결정할 수 있습니다. 즉 
+
+```java
+ PostDto readPostQuery(PostDto dto);
+```
+
+에 전달된 `PostDto` 의 `writer` 가 `null` 일 경우 `and writer = #{writer}` 부분은 생략됩니다.
+
+## Auto Generated Keys
+
+이제 Post와 연관관계의 Board 데이터를 주고받는 인터페이스와 XML을 만들어야 합니다. 만약 새로운 Board를 만들고 바로 Post를 전달하고 싶다면, PostDto에서 사용할 Board의 id가 전달되어야 합니다.
+
+하나의 새로운 Row를 생성하면, 일반적인 데이터베이스는 해당 Row에 자동생성된 id를 전달합니다. 이 id를 활용하고 싶다면 XML 상에 어떤 값을 활용할건지를 명시해줘야 합니다.
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.aquashdw.mybatis.mapper.BoardMapper">
+    <insert
+            id="createBoard"
+            useGeneratedKeys="true"
+            keyProperty="id"
+            parameterType="dev.aquashdw.mybatis.dto.BoardDto"
+    >
+        insert into board(name) values (#{name})
+    </insert>
+</mapper>
+```
+
+여기서 `useGeneratedKeys` 와 `keyProperty` 를 설정하면, 해당 테이블의 `keyProperty` 에 생성된 `id` 값이 인자로 전달한 DTO에 입력되게 됩니다. 즉 위와같은 XML을 기반으로 `BoardMapper.createBoard()` 함수를 사용하게 되면,
+
+```java
+ @Repository
+ public class BoardDao {
+     private final SqlSessionFactory sessionFactory;
+
+     public BoardDao(@Autowired SqlSessionFactory sessionFactory){
+         this.sessionFactory = sessionFactory;
+     }
+
+     public int createBoard(BoardDto dto){
+         try (SqlSession session = sessionFactory.openSession()){
+             BoardMapper mapper = session.getMapper(BoardMapper.class);
+             return mapper.createBoard(dto);
+         }
+     }
+ } 
+```
+
+`mapper.createBoard(dto);` 이후 인자로 전달된 `dto` 의 `dto.getId()` 에는 자동 생성된 id가 할당되게 됩니다.

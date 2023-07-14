@@ -1,0 +1,228 @@
+앞선 예시들은 전부 `Controller` 단위에서 마무리 되었습니다. 지금은 이 상태로도 큰 문제가 발생하진 않지만, 점차 더 다양하고 복잡한 기능을 다루게 될 경우 `Controller` 내부의 코드가 더 복잡해질 것입니다. 그러므로 Spring Boot에서 `Controller` 내부의 코드를 역할에 따라 class를 분리하여 관리하는 방법에 대하여 알아봅시다.
+
+## Component
+
+기본적으로 Spring은 객체를 만들고 관리를 하는 역할을 하는 Spring IoC Container가 존재합니다. 이 IoC Container는 Bean으로 정의된 객체를 만들고, 객체로 만들어지는데 Bean이 필요한 객체에 자동으로 제공한다고 앞서 설명한바 있습니다. IoC Container가 Bean 객체들을 검색하고 등록하는 기준은 
+
+1. 특정 annotation이 부여된 클래스인지 아닌지
+2. `ComponentScan` annotation을 기준으로 정의된 패키지인지
+
+라는 기준을 가지고 있습니다. 이 `ComponentScan` 어노테이션은 저희가 직접 사용하지 않았지만, Spring Boot의 main 함수를 담고있는 class에 붙어있습니다.
+
+```java
+@SpringBootApplication
+public class CrudApplication {
+```
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(excludeFilters = { @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),
+		@Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) })
+public @interface SpringBootApplication {
+```
+
+언뜻 복잡해 보이는 내용이지만, 기본적으로 복잡한 설정이 없다면 저희가 만든 프로젝트에 포함된 패키지라면 Bean을 만들기 위한 annotation이 붙어있는지를 검색한다는 의미입니다. 이때 검색하는 annotation은 기본적으로 `@Component` annotation입니다.
+
+```java
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Component
+public @interface Controller {
+```
+
+`@Controller` 의 정의를 살펴보면 여기에 이미 `@Component` 가 붙어있음을 확인할 수 있습니다. 문서를 확인해서 `Controller` 에 대해서 확인해보면, ‘`@Component` 의 특수한 형태로, `@RequestMapping` 이 붙은 Handler 함수들을 사용하기 위한 `Component`'라고 합니다. 즉 저희가 IoC Container에 class를 등록하고 싶다면 이 `@Component` annotation을 사용하면 됩니다. 아니면 `Controller` 와 마찬가지로, `Component` 가 적용된 다른 다른 annotation을 사용할 수 있습니다.
+
+- `@Component` : 기본적으로 class를 IoC Container의 검색 대상으로 지정합니다.
+- `@Controller, @RestController` : 해당 class에 API Endpoint를 위한 `@RequestMapping` 이 구성되어 있는 `Component` 임을 지정합니다.
+- `@Service` : 일반적인 서비스 로직을 구현하기 위한 `Component` 임을 지정합니다. 비교적 범용적으로 사용되는 annotation 입니다.
+- `@Repository` : 데이터를 다루기 위한 `Component` 임을 지정합니다.
+
+이러한 `Component` 를 지정하기 위한 annotation 들을 Spring Stereotype Annotation이라고도 부릅니다. 각각의 annotation을 적절한 역할을 하는 class에 붙여줌으로서, 저희가 작성하는 소스 코드의 구조를 더 깔끔하게 유지할 수 있습니다. 이전에 작성한 프로젝트에서 사용해 보도록 합시다.
+
+## Repository
+
+먼저 데이터를 다루기 위한 Repository를 먼저 만들어 봅시다. 데이터를 다루기 위한 함수를 `interface` 의 형태로 정의하도록 합니다.
+
+```java
+ public interface PostRepository {
+     boolean save(PostDto dto);
+     List<PostDto> findAll();
+     PostDto findById(int id);
+     boolean update(int id, PostDto dto);
+     boolean delete(int id);
+ }
+```
+
+이 `interface` 를 구현하는 클래스는 어떤 형태로든 `PostDto` 데이터를 관리하는 용도로서 제작이 되어야 합니다. 본래 `Controller` 에 만들어 뒀던 `List<PostDto>` 의 형태라도 상관 없습니다. 이를 위해 `PostRepositoryInMemory` 클래스를 만들어 봅시다.
+
+```java
+ @Repository
+ public class PostRepositoryInMemory implements PostRepository {
+     private static final Logger logger = LoggerFactory.getLogger(PostRepositoryInMemory.class);
+     private final List<PostDto> postList;
+ 
+     public PostRepositoryInMemory() {
+         this.postList = new ArrayList<>();
+     }
+ 
+ 		@Override
+     public boolean save(PostDto dto) {
+         return this.postList.add(dto);
+     }
+
+     @Override
+     public List<PostDto> findAll() {
+         return this.postList;
+     }
+
+     @Override
+     public PostDto findById(int id) {
+         return this.postList.get(id);
+     }
+
+     @Override
+     public boolean update(int id, PostDto postDto) {
+         PostDto targetPost = this.postList.get(id);
+         if (postDto.getTitle() != null) {
+             targetPost.setTitle(postDto.getTitle());
+         }
+         if (postDto.getContent() != null) {
+             targetPost.setContent(postDto.getContent());
+         }
+         this.postList.set(id, targetPost);
+         return true;
+     }
+
+     @Override
+     public boolean delete(int id) {
+         this.postList.remove(id);
+         return true;
+     }
+ }
+```
+
+구체적인 구현은 `Controller` 에서 했던것과 큰 차이가 없습니다. 멤버변수 `postList` 를 가지고 있고, `PostDto` 를 전달받는 함수에 따라 `List` 를 조작해 줍니다.
+
+앞서 Spring IoC 컨테이너는 `class`는 물론, `interface`를 가지고도 작동한다고 이야기를 하였습니다. `Bean` 객체가 요구하는 다른 `class` 중 등록된 `Bean` 객체가 존재한다면 해당 객체를 생성자에 주입시켜 줍니다. 이때 굳이 간단한 `class` 라도 `interface` 를 사용하는 이유는 확장성의 측면에서 유연함을 가지기 위해서 입니다.
+
+만일 어떤 특정 기능을 구현하기 위해 `class` 를 주입받도록 코드를 작성하게 된다면, 새로운 방법으로 기능을 구현할 때 새로운 `class`의 구현과 함깨 그 `class`를 사용하는 모든 `Bean` 객체들의 주입받는 인자를 변경시켜 주어야 합니다.
+
+만약 `interface` 를 통해 구현 / 사용할 함수의 정의를 먼저하고, 그 `interface` 를 구현하는 `class` 를 만들게 된다면, 새로운 방법으로 새로운 `class` 를 만든다고 하더라도, `interface` 의 함수 정의를 그대로 따르도록 한다면, 해당 `interface` 를 사용하던 `Bean` 객체 입장에서는 해당 변경 사항에 대하여 알고있을 필요가 없어집니다.
+
+즉 지금같은 상황에서 후에 `List` 변수를 사용하지 않고 데이터베이스를 사용하는 상황에서, `class` 를 사용하는 것보다 `interface` 를 사용하는 것이 상황에 더 유연하게 대처할 수 있다는 의미입니다.
+
+## Service
+
+이제 Controller에서 Service의 내용을 분리를 해 봅시다. 기본적인 CRUD의 기능을 `interface` 형태로 정의하고, 이를 구현하는 간단한 `class`를 만들어 봅시다.
+
+```java
+ public interface PostService {
+     void createPost(PostDto dto);
+     List<PostDto> readPostAll();
+     PostDto readPost(int id);
+     void updatePost(int id, PostDto dto);
+     void deletePost(int id);
+}
+```
+
+`class` 를 구현할때 생성자에 저희가 필요로 하는 `PostRepository` 를 주입받을 수 있습니다. `Bean` 객체로 등록된 클래스는 IoC 컨테이너에서 클래스 객체를 생성하는데 필요한 인자를, 관리중인 객체들 중에서 적합한 객체를 자동으로 전달하게 됩니다.
+
+```java
+ @Service
+ public class PostServiceSimple implements PostService {
+ 		private final PostRepository postRepository;
+ 
+ 		public PostServiceSimple(
+             @Autowired PostRepository postRepository
+     ){
+         this.postRepository = postRepository;
+     }
+ 
+     @Override
+     public void createPost(PostDto dto) {
+         if (!this.postRepository.save(dto)) {
+             throw new RuntimeException("save failed");
+         }
+     }
+
+     @Override
+     public List<PostDto> readPostAll() {
+         return this.postRepository.findAll();
+     }
+
+     @Override
+     public PostDto readPost(int id) {
+         return this.postRepository.findById(id);
+     }
+
+     @Override
+     public void updatePost(int id, PostDto dto) {
+         this.postRepository.update(id, dto);
+     }
+
+     @Override
+     public void deletePost(int id) {
+         this.postRepository.delete(id);
+     }
+ }
+```
+
+본래 `PostService` 클래스에서는 `Controller` 에서 확인할 수 없는 데이터 무결성이나 사용자 상세 권한 확인 등의 기능이 추가될 수 있습니다. 또는 외부 API를 이용한 데이터 정제 등, `@Service` 의 정의대로 범용의 기능을 개발하기 위해 사용하시면 됩니다. 여기서는 간단하게 `Repository` 사용을 위한 중간 비즈니스 로직이기 때문에 큰 내용이 없습니다.
+
+이제 만든 `PostService` 를 사용하도록 `PostRestController` 를 업데이트 하면 됩니다.
+
+```java
+		private final PostService postService;
+
+    public PostRestController(
+            @Autowired PostService postService
+    ){
+        this.postService = postService;
+    }
+
+    @PostMapping()
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createPost(@RequestBody PostDto postDto){
+        logger.info(postDto.toString());
+        this.postService.createPost(postDto);
+    }
+
+    @GetMapping()
+    public List<PostDto> readPostAll() {
+        logger.info("in read all");
+        return this.postService.readPostAll();
+    }
+
+    @GetMapping("{id}")
+    public PostDto readPost(@PathVariable("id") int id) {
+        logger.info("in read one");
+        return this.postService.readPost(id);
+    }
+
+    @PutMapping("{id}")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void updatePost(
+            @PathVariable("id") int id,
+            @RequestBody PostDto postDto
+    ) {
+        logger.info("target id: " + id);
+        logger.info("update content" + postDto);
+        this.postService.updatePost(id, postDto);
+    }
+
+    @DeleteMapping("{id}")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void deletePost(@PathVariable("id") int id){
+        this.postService.deletePost(id);
+    }
+```
+
+여기까지 진행하면 `Controller - Service - Repository` 순서로 이어지는 기초적인 계층 구조가 만들어집니다.
+
+여기서 이야기하는 내용은 다 의미론적 내용입니다. 저희가 이번에 `Service` 와 `Repository` 를 도입함으로서 얻게되는 기능적 차이는 전혀 없습니다. 하지만 각 클래스에 역할을 부여하고, 작성할 코드를 그에 맞게 분류하게 되면, 더 깔끔하게 코드를 정리하고, 추가되는 기능들에 유연하게 대처가 가능해집니다.
