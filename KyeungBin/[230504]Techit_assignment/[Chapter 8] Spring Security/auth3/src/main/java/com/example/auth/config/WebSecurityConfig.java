@@ -1,0 +1,99 @@
+package com.example.auth.config;
+
+import com.example.auth.infra.CustomUserDetailsService;
+import com.example.auth.infra.NaverOAuth2Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+@Configuration
+@EnableWebSecurity
+// 의존성 spring security를 사용할 준비가 됐다는 것을 알려줌.
+
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    private final UserDetailsService userDetailsService;
+    private final NaverOAuth2Service naverOAuth2Service;
+    public WebSecurityConfig(
+            @Autowired NaverOAuth2Service naverOAuth2Service ,
+            @Autowired CustomUserDetailsService customUserDetailsService
+    ){
+        this.userDetailsService = customUserDetailsService;
+        this.naverOAuth2Service = naverOAuth2Service;
+    }
+
+    @Override
+    public void configure(AuthenticationManagerBuilder auth) throws Exception {
+
+        auth.userDetailsService((this.userDetailsService));
+//        auth.inMemoryAuthentication()
+//                .withUser("user1")
+//                .password(passwordEncoder().encode("user1pass"))
+//                .roles("USER")
+//                .and()
+//                .withUser("admin1")
+//                .password(passwordEncoder().encode("admin1pass"))
+
+//        ;
+
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .authorizeRequests()
+                // AuthorizationConfigurer 를 받는 줄
+
+                .antMatchers("/home/**", "/user/signup/**")
+                // 질문 ** 의 쓰임새? -> 잘 안들림.. ( 특정 url 에 대한 요청 ? )
+                // anyRequest() : url 기반의 권한 확인기법 (언제 허용을 하고 언제 비허용을 할 것인지)
+                // antMAtchers() : url mapping 담당
+
+                .anonymous()
+                // anonymous() : 익명의 사용자들이 접근할 수 있도록 해주는 것 (로그인을 할 수 있도록)
+                // authenticated() : 로그인을 한 사용자가 접근하는 것
+                // permitall() : 로그인과 관계 없이 누구든지 접속가능하게 하는 것
+
+                .anyRequest()
+                //            
+
+                .authenticated()
+                // admin의 경로로 들어가는 경우에는 인증요구
+
+             .and()
+                // and()를 사용함으로써 authroizeRequests 는 끝나고 httpSecurity 를 다시 받아왔다고 판단 가능
+                .formLogin()
+                .loginPage("/user/login")
+                .defaultSuccessUrl("/home")
+                .permitAll()
+                // 마지막에는 permitAll을 해주는게 좋다!
+
+
+             .and()
+                .oauth2Login()
+                    .userInfoEndpoint()
+                    .userService(this.naverOAuth2Service) // 이거뭐지 갑자기 설명도 없이 생겨났음 (질문)
+                    // userinfoendpoint에 userservice를 구성하는 것?
+                .and()
+                    .defaultSuccessUrl("/home")
+                    // 이후 authlogin이 성공했을 때 무슨 행동을 할 것인지.
+             .and()
+                .logout()
+                .logoutUrl("/user/logout")
+                .logoutSuccessUrl("/home")
+                .deleteCookies("JSEESIONID")
+                .invalidateHttpSession(true)
+                .permitAll()
+
+        ;
+    }
+
+}
