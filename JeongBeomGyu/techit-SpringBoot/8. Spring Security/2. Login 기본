@@ -1,0 +1,162 @@
+build.gradle을 확인해보면 implementation의 security를 주석해 놓는다.
+그리고 TestController 라는 클래스를 만든다. 그 다음 클래스 위에 controller 어노테이션을 붙여준다. 그 다음 
+    @GetMapping("test")
+    public @ResponseBody String test(){
+        return "Hello World!";
+    }
+
+메소드를 넣어준다음 실행한다. 브라우저에 Hello World가 나오는 것을 보고 build.gradle에 가서 security에 대한 주석을 제거한다. 그 다음 다시 실행한다음 가시 브라우저에 가서 ctrl + shift + R을 눌러주면 로그인을 요구하는 페이지가 나온다. 이때 아이디에 user와 password에 Using generated security password : 뒤에 있는 내용을 넣어준 다음 로그인을 하면 Hello World라는 문구가 나온다. -> security라는 implementation를 넣어주는 것만으로도 이러한 페이지가 생성이 되었다.(SpringBoot이기 때문이다.) -> 또한 user를 만들지 않았음에도 user가 자동으로 생성되고 security password가 자동으로 생성이 된다는 사실도 알 수 있다. 
+
+지금부터 이러한 login 페이지를 커스텀해줄 것이다 (우선 TestController를 삭제한다.)
+1. config라는 패키지를 만든 다음 그 패지키 안에 WebSecurityConfig라는 클래스를 만들어준다. 그 다음 클래스 위에 @Configuration(config라는 것을 알려주는 어노테이션), @EnableWebSecurity(이 어노테이션이 붙으면 build.gradle에 있는 dependencies에 implementation되어 있는 security의 설정들을 조작할 준비가 되었다라는 것을 Spring IoC에다가 알려준다.) 을 붙여준다. 또한 확장자로 더이상 Adapter를 받아올 수 없으므로 SecurityFilterChain를 Bean으로 등록해서 사용해야한다.
+
+1-2.즉 상속 대신에 
+    @Bean
+    public SecurityFilterChain configure(HttpSecurity http) throws Exception {
+        super.configure(http);
+    }
+
+이런식으로 함수를 선언해준다.  
+이때 configure(HttpSecurity http)즉, configure함수에 들어오는 HttpSecurity는 filter와 유사하게 생각하면 된다. 이 HttpSecurity 객체가 전체 application에 권장을 하는 설정들을 들고 있는 객체인데 이것을 @Configuration 어노테이션(Configuration Bean)을 통해서  http객체에다가 원하는 값들을 함수로서 추가를 함으로서 보안설정을 조작을 하는 용도로 사용할 수 있다.
+
+1-3. configure 함수에 
+http
+    .authorizeRequest()  -> 이것은 expressionUrl AuthenticationConfigurer를 받는 것이다. (지금은 authorizeHttpRequests 로 변경)
+    .anyrequest()    -> 이것은 authorizeRequest의 URL 기반의 권한 확인 기법이다. (URL이 주어졌을 때 언제는 허용을 할 것이고, 언제는 허용을 하지 않을 것인지에 대한것을 설정을 하기 위해서 호출하는 함수이다.) (anyrequest는 어떠한 경로로 요청이 들어와도 모든 요청을 허용하겠다는 뜻)
+    .permitAll()   -> 어떤 요청에 대해서도 허용을 해라는 의미이다. (annoymous는 로그인이 되지 않은 사용자들이 접근을 할 수 있도록 설정하는 것, authenticated는 로그인이 되어있는 사용자들만 접근할 수 있도록 설정하는것)
+
+    ->이런식으로 누가 접근이 가능한지를 설정할 수 있다.
+
+-> 같이 추가하면 추가되는 하나하나의 함수가 http security 내부 설정을 할 수 있는 다른 독특한 설정 클래스가 돌아오게 된다.
+
+
+authorizeRequest();  -> 이것은 URL기반의 권한확인을 설정을 하기위한 클래스로 볼 수 있다. (지금은 authorizeHttpRequests 로 변경)
+    .antMatchers()    -> 이것은 URL을 기준으로 어떤것을 허용을하고 어떤것을 허용하지 않겠는지를 같은 부분이 들어가게 된다. (지금은 requestMatcher를 사용)
+
+
+1-4. controller라는 패키지를 만든 다음 HomeController라는 클래스를 만든다. @Controller, @RequestMapping("home") 두 어노테이션을 클래스 위에 붙여주고, 이 컨트롤러는 view를 돌려주기 위해서 사용하는 controller이다.
+@Controller
+@RequestMapping("home")
+public class HomeController {
+    private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
+
+    @GetMapping
+    public String home(){
+        return "index"; -> controller에 있는 RequestMapping에서 문자열 (String 형태)을 돌려주면 해당하는 view(index)를 찾아서 반환을하도록 설정되어 있다. 
+    }
+}
+
+1-5. index에 대한 설정이 없으므로 template에 index라는 html파일을 만든다.
+<!DOCTYPE html>
+<html
+        lang="en"
+        xmlns:th="http://www.thymeleaf.org"
+        xmlns:sec="http://www.w3.org/1999/xhtml">      <!--sec가 들어가는 이유는 인증 관련된 설정들을 추가로 할 것이기 때문에 secnamespace에서 몇 가지 attribute를 가져와야한다.-->
+
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Home</title>
+</head>
+<body>
+    Hello World!
+</body>
+</html>
+->WebSecurityConfig에 따라서 어떻게 작동하는지 확인해보면 permitAll에서는 http://localhost:8080/home은 Hello World!를 출력한다. authenticated()로 변경하면 이 페이지를 볼 권한이 없다고 나온다.(로그인을 하지 않은 상대라면 403이라는 허가 받지 않은 사용자라는 응답이 돌아온다. 401은 사용자가 자신이 누구인지 증명을 못했다는 뜻으로 사용된다.)  -> 이때 http://localhost:8080/login이라는 페이지로 가도 권한이 없다라고 나온다. 왜냐하면 configure을 하기 전에 HttpSecurity 상태에서 기본 로그인 페이지를 사용을 하도록 설정이 되어 있는 상태였다. 그런데 HttpSecurity를 받아오고 거기에 추가적은 설정이 authorizeHttpRequests등을 넣음으로서 default login page가 작동을하지 않기 시작했기 때문이다. 
+
+2. 이렇게 모든 페이지에 권한이 필요하지 않고 homepage에서는 권한이 필요없이 접근이 가능하지만 다른 페이지는 권한이 필요하도록 조작을 해볼 것이다.
+이렇게 URL에 따라서 다르게 권한을 부여할 때 antMatchers(지금은 requestMatcher를 사용)을 사용한다. -> URL의 패턴을 어느정도 정의를 해서 사용한다.
+
+2-1. homepage에 권한이 필요없이 접근이 가능하도록 WebSecurityConfig 클래스에서 설정& 그 이외의 페이지에는 권한이 필요하도록 조작
+    @Bean
+    public SecurityFilterChain configure(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(authorize->authorize
+                        .requestMatchers("home/**")   -> 이렇게 하면 homepage 또는 거기서 들어가게 되는 여러 계층의 URL의 경우 익명사용자도 사용을 할 수 있도록 허가가 된다. (*이 하나이면 하나의 path를 **이 두개이면 여러개의 층으로 나누어져있는 path 전부다 동일하게 확인을 한다라는 뜻이다.) 또한 requestMatchers()안에는 여러개의 URL이 들어갈 수 있다.
+                        .anonymous()
+                        .anyRequest()   -> requestMatchers이외의 페이지에서는 authenticated로 권한이 필요하도록 설정을 했다.
+                        .authenticated());
+        return http.build();
+    }
+
+2-2. controller 패키지에 adminController 클래스를 추가하고 @Controller, @RequestMapping("admin") 어노테이션을 붙인 다음 HomeController와 유사하게 만들어준다.
+@Controller
+@RequestMapping("admin")
+public class AdminController {
+    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
+
+    @GetMapping
+    public String adminHome(){
+        return "admin";
+    }
+}
+
+2-3. template에 index.html 파일을 복사한 다음 admin이라는 html을 만든다.
+이렇게 하면 WebSecurityConfig라는 클래스의 anyRequest를 기준으로 했을 때 admin 경로로 들어가는 경우에는 권한을 요구를 할 것이고, home으로 들어가는 경우에는 권한을 요구하지 않을 것이다. 지금은 antMatchers다음에 anyRequest가 와서 문제가 없지만, anyRequest가 호출되고 난 뒤에 antMatchers 또는 MvcMatchers 같은 특정 URL에 대한 요청을 처리하지못한다.(anyRequest가 모든 URL에대해서 처리하기 때문이다.) 즉, anyRequest는 꼭 마지막에 선언을 해줘야한다. 
+
+
+3. authorizeRequest (지금은 authorizeHttpRequests)는 끝났고 여기에서 추가로 설정을 더 하고 싶다면 .and를 사용하면 된다. .and를 사용하면 authorizeRequest는 끝나고 HttpSecurity를 다시 받아왔다는 뜻이다. 
+.formLogin()은 로그인 페이지를 설정을 하겠다고 선언하는 의미이다. 그 다음은 .loginPage()을 통해 login 페이지가 어디에서 나올것인지를 설정해줘야한다.
+                .formLogin(login->login
+                        .loginPage("/user/login"));
+
+3-1. custom login page를 만들기 위해서 template에 login이라는 html 파일을 만들어준다.
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Login</title>
+</head>
+<body>
+<form th:action ="@{/user/login}" method="post">    ->login을 할 때에는 from의 method를 post로 설정해줘야한다.
+  <input type="text" name="username" placeholder="아이디" >
+  <input type="password" name="password" placeholder="비밀번호">
+  <button type="submit">로그인</button>
+</form>
+</body>
+</html>
+
+
+-> 우리의 목적은 login 페이지가 필요한 상황에서 login.html 페이지가 나왔으면 한다.
+-> loginPage()안에 /user/login을 넣어준다.
+
+3-2. controller에 UserController라는 클래스를 만들어준다.
+
+@Controller
+@RequestMapping("user")
+public class UserController {
+    @GetMapping("login")
+    public String login(){
+        return "login";
+    }
+}
+
+3-3. 추가로 antMatchers에 "/user/**"를 추가해줘야한다. 왜냐하면 /user/login이라는 경로 자체도 authorizeRequests밑에 들어가기 때문에 antMatchers에 로그인하지 않은 사람도 들어갈 수 있도록 추가해줘야한다.
+-> http://localhost:8080/admin으로 가면 login 페이지가 있는 것을 확인할 수 있고, 로그인을 하고나면 hello admin이 출력되는 것을 확인할 수 있다.
+
+4. 만약 http://localhost:8080/user/login을 한다음 로그인을 하면 hello world가 출력되는 것을 봐서 root로 간것을 확인할 수 있다. (root로 가면 기본적을 index.html이 나오도록 springboot는 설정이 되어 있다.) 이것이 아니라 login을 했을 때 기본적으로 돌아가야 되는 페이지를 설정하고 싶다면 .defaultSuccessUrl()을 사용하면 된다.
+.formLogin(login->login
+                        .loginPage("/user/login")
+                        .defaultSuccessUrl("/home")
+                        .permitAll());
+-> formLogin을 설정하면서 마지막에 permitAll을 넣어주면 위에 있는 authorizeRequest보다 우선순위로 작동을 하기 때문에 /user/login 페이지나 기타 필요한 페이지들에는 로그인 없게끔 설정을 할 수 있다.
+
+4-1. 로그인을 했으면 logout을 만든다. 로그인과 비슷하게 logoutpage 설정할 수 있다. 또한 logoutSuccessUrl("/home")은 defaultSuccessUrl과 동일하게 home이라고 해준다. 그리고 로그인 정보에 대한 내용은 cookie에 저장이 되므로 deleteCookies() (SpringBoot는 jessionId에 로그인 정보가 저장이 된다.) 에 jessionId을 넣는다. 추가로 .invalidateHttpSession(true) 같은 경우는 HTTP 세션 객체를 사용할 때 거기에 저장해 놓았던 내용들을 지우는 것에 대한 내용을 담고 있다. (true이면 지운다는 의미). permitAll은 여기서 설정한 접근해야되는 URL들(logoutpage나 logoutSuccessUrl)에 대해서 권한을 풀어주는 역할이다.
+
+4-2. logout에 대한 설정은 끝났고 logout을 할 수 있는 버튼 같은 것이 필요하다. admin 페이지가 확실히 로그인이 되었다라는 것을 확인할 수 있는 페이지임으로 admin.html에다가 logout 버튼을 만든다. -> logout 역시 form을 사용한다. logout 역시 form을 사용할 때 method는 post로 진행한다. th:action은 통해서 경로를 설정해준다. 
+
+5. hmoepage의 내용물을 조금 바꿔서 로그인이 되기 전이라면은 helloworld, 로그인이 되고 난 이후에는 로그아웃 버튼과 인사말을 넣어보자 (index.html의 body에 내용을 추가
+
+    <div sec:authorize="isAnonymous()">     -> Anonymous상황에서만 밑의 내용을 출력
+        <h2>Hello World!</h2>
+        <button onclick="location.href='/user/login'">로그인</button>
+    </div>
+    <div sec:authorize="isAuthenticated()">   -> authenticated 상황에서만 밑의 내용을 출력
+        <h3>
+            반갑습니다. <span sec:authentication="name"></span>님!
+        </h3>
+        <form th:action="@{user/logout}" method="post">   ->login이 되었다면 로그아웃 버튼 생성
+            <input type="submit" th:value="로그아웃">
+        </form>
+    </div>

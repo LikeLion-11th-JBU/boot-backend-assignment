@@ -1,0 +1,18 @@
+spring:
+  profiles:
+    active: test
+
+logging:
+  level:
+    root: warn
+    dev.aquashdw.jpa.handler: debug
+
+custom:
+  property:
+    single: custom-property
+    comlist: comma,sparated,list,to,value
+    ncp:
+      id: api-key
+      key: api-key
+      url: http://ncp.com/
+

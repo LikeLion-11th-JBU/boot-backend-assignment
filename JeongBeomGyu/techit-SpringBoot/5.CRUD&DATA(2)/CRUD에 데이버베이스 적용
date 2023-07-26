@@ -1,0 +1,102 @@
+1. PostController 만들기 (HTTP 기반의 요청을 통해서 조작을 할 것이다.  -> RestContoller 어노테이션 사용)
+2. CRUD를 위한 기본적인 것들을 설정한다.
+private static final Logger logger = LoggerFactory.getLogger(PostController.class); -> Controller 생성
+
+3. PostService 클래스 만들기 (Repository는 데이터 전송, Service 비지니스로직을 담당한다. Controller는 Front gateway의 역할을 한다.) 클래스위에 Service어노테이션 만든다.
+private static final Logger logger = LoggerFactory.getLogger(PostService.class); 도 추가 
+4.PostDad라는 Repository 클래스 만들기 -> 클래스 위에 Repository 어노테이션을 만든다.
+private static final Logger logger = LoggerFactory.getLogger(PostDao.class); 도 추가
+
+5. PostController에 PostService 클래스를 받아온다.
+private final PostService postService;
+    public PostController(
+            @Autowired PostService postService    -> PostController 생성자에서 Spring IoC Container에다가 PostService Bean을 달라고 요구
+    ){
+        this.postService = postService;
+    }
+
+6. Controller에 CRED를 위한 엔드포인트를 받아온다.
+// Create
+    @PostMapping()
+    public void createPost(){
+
+    }
+
+    //Read
+    @GetMapping("{id}")
+    public void readPost(@PathVariable("id") int id){
+
+    }
+
+    @GetMapping("")
+    public void readPostAll(){
+
+    }
+
+    // Update
+    @PutMapping("{id}")
+    public void updatePost(@PathVariable("id") int id){
+
+    }
+
+    //Delete
+    @DeleteMapping("{id}")
+    public void  deletePost(@PathVariable("id") int id){
+
+    }
+createPost, readPost, readPostAll 같은 걸 할때 Entity를 만들어 놨는데, 객체를 주고 받기위한 객체를 정의하지 않았다. -> CRUD Controller와 가장큰 차이점이다. (Dto가 없다.) -> Entity는 단순히 데이터의 표현만 나타내는 것이기도한데, 안쪽에 내부 객체같은(postEntityList) 것들이 존재하기도 한다. 즉, 데이터자체만을 전송하는 것 이상으로, 전달이 되는 데이터가 많다는 점이 단점이다. 그렇기 때문에 단순히 CRUD Operation에서 Entity를 Dto로 있는 그대로 사용하는 것을 좋지않다.
+7. 그렇기 때문에 PostDto를 만든다.
+멤버변수와 빈생성자, 생성자, Getter와 Setter, toString을 만들어준다.
+    private int id;
+    private String title;
+    private String content;
+    private String writer;
+    private int boardId; 
+
+Controller와 실제로 요청을 보내온 사용자가 데이터를 주고 받고 Dao까지 데이터가 들어가게 될 것이다. 그러면 Dao에서 Entity를 조정을 하고 어떠한 결과를 돌려주는것을 목표로 하고 있다. -> 즉, PostService를 만들었다면 PostController에서 주고 받는것은 PostDto가 되어야한다. -> 위에 PostController에서 public void createPost에서 void를 PostDto로 바꿔준다(update와 delete는 바꿀 필요 없음). 또한 create, update의 파라미터에 RequestBody를 적어준다. 
+8. 실해했을 때 200번대 응답을 주지않도록 create의 PutMapping밑에 @ResponseStatus(HttpStatus.CREATED) 어노테이션을 넣어준다.,@ResponseStatus(HttpStatus.ACCEPTED)는  update,delete 메소드 위에 붙여준다.
+
+9. PostService의 서비스 구성을 만들어준다.
+ public void createPost(PostDto postDto){
+
+    }
+
+    public PostDto readPost(int id){
+
+    }
+    public List<PostDto> readPostAll(){
+
+    }
+    public void updatePost(int id, PostDto postDto){
+
+    }
+    public void deletePost(int id){
+
+    }
+10. PostDao(실제로 DB와 소통을 하기 위한 Repository를 가지고 있어야한다.)
+public PostDao(
+            @Autowired PostRepository postRepository
+            ){
+        this.postRepository = postRepository;
+    }
+
+11. PostEntity를 다루는 PostDao를 다 만들었다면 PostService를 만든다.
+PostService의 윗 부분에다가 PostDao를 가져오는 것을 만들어놨다.
+PostDao를 여기에서 사용을 할 것이기 때문에 
+private final PostDao postDao;
+    public PostService(@Autowired PostDao postDao){
+        this.postDao = postDao;
+    }
+
+12. 마지막으로 Controller에서 Service를 받아온 다음 이것을 사용. 이미 서비스에서 구현해놓았던 기능들을 다 불러서 반환해주면 된다. 
+@PostMapping 의 create에 this.postService.createPost(dto);을 추가하고 return값을 
+
+@GetMapping의 readPost에 반환값 return this.postService.readPost(id); 을 설정한다.
+
+@GetMapping의 readPostAll에 반환값을 return this.postService.readPostAll();
+
+@PostMapping의 updatePost에는 반환할 필요가 없으므로 this.postService.updatePost(id, dto); 을 받아오고
+
+@DeleteMapping의 delete 역시 변환할 필요가 없으므로  this.postService.deletePost(id);을 받아온다.
+
+추가적으로 Entity를 남겨두고 싶다면 yml파일에서 dll-auto를 create에서 update나 none으로 바꿔주면 된다. -> 변경사항을 적용하지 않고, 테이블을 생성하기 위해서 새로운 테이블을 없애지도 않는다. 

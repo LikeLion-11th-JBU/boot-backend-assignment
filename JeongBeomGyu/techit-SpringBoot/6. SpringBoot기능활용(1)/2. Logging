@@ -1,0 +1,110 @@
+Logging은 정보를 얻기위해서 하는 것이다.
+log level - 남길 메시지의 중요도 
+logger에는 5가지 단계가 있다 trace, debug, info, warn, error
+확인하는 용도로 PostController에 GetMapping("test-log")로 확인해본다.
+    @GetMapping("test-log")
+    public void testLog(){
+        logger.trace("TRACE Log Message");
+        logger.debug("DEBUG Log Message");
+        logger.info("INFO Log Message");
+        logger.warn("WARN Log Message");
+        logger.error("ERROR Log Message");
+    }
+
+logger는 어떤시점에서 어떤 일이 일어났는지를 확인할 수 있다. logging이랑 사용 로그를 남기는 것은 다르다. logger는 기본적으로 이 application이 진행되는데 있어서 무슨일이 일어났는지 (예를 들어 요청이 들어왔을 때 id에 어떤값이 들어왔다. 이 id를 deletePost라는 함수에 전달을 한다. 또한 deletPost에서 DAO로 값을 전달을 하면 DAO에서 Entity를 받아와서 삭제를 하거나 하는 순서로 봤을 때 무슨일이 있었는지를 보는 개발적인 측면에서 필요한 메시지를 남기는 것이다.) 에 대한것이라면, 사용이력은 서비스를 어떤식으로 사용을 했는지, 일반적으로는 DB에 이력을 남기고 로그를 스왑하고 통계를 낸다. 그러므로 log는 프로그램의 진행을 확인하기 위해 사용을 한다. 로그에는 무슨일이 있었는지에 대해서 작성을 한다. (예를 들어 logger.info("deletePost, id:{}", id)같이 삭제한 id에 대한 로그를 남기는 것이다.)
+
+trace는 가장 사소한 메시지, error는 가장 위험한 메시지이다.  info는 일반적인 진행상황에 대한 메시지이다. Warn은 jpa 설정에 대한 메시지로 문제가 생길 수도 있다는 수준의 메시지이다. debug는 한줄한줄은 아니더라도 어떠한 행위가 이뤄졌라는 수준의 메시지이다. trace는 개발단계에서만 사용. log level같은 경우는 application을 실행하면서 그 값을 설정해 줄 수 있다. 기본값은 info로 들어간다. log level을 설정하게 된다면 해당하는 log level 까지, 그것보다 같거나 더 위험한 메시지들만 출력을 하게 된다. SpringBoot는 기본적으로 info를 기본 log level로 잡는다. 그렇기 때문에 debug나 trace에 관련된 로그는 나오지 않고 info, warn,error에 대한 로그만 나오게 된다. 
+
+1. log level을 설정하기 위해서 application.yml 파일로 들어가서 logging 에 대한 설정을 해준다.
+logging:
+  level:
+    root: debug
+
+로 설정하면 debug까지의 로그 메시지를 나오게한다. 또한 root에 trace를 쓰면 trace까지의 로그 메시지를 볼 수 있다.
+
+2. root 를 warn으로 해 놓는다. 근데 만약 프로젝트를 상용하는 단계에서 무슨일이 일어났는지를 보고 싶다면 root와 같은 계층에다가 설정을 추가해 줄 수 있다. 패키지 이름을 작성을 하면 된다.
+logging:
+  level:
+    root: warn
+    dev.aquashdw: info
+
+또한 logger.getName()에 저장된 값은 해당 logger가 있는 class에 대한 이름이 들어간다. 그 이름을 기반으로 package 범위를 설정함으로서 그 패키지에 대한 로그의 레벨을 설정할 수 있다. 
+
+-> 지금까지 본 로그들은 실행중에만 작성이 되고 있다. 그런데 로그는 서비스를 지켜보고 있지 않더라도, 나중에 가서라도 무슨일이 일어났는지 보기 위해서 작성을 하는 것인데, 지금같은 경우에는 쓸 수 없다. 즉, 어디에도 로그가 남아있는 것을 확인할 수 없다. -> 이 문제점을 해결하기 위해 가장 기본적인 방법을 실행해본다.
+
+3. 로그 기록 남기기위해서 logging 라이브러리를 사용한다.
+이때까지 우리가 사용한 private static Logger logger = LoggerFactory.getLogger(PostController.class);에서 SpringBoot의 일부가 아니라 자바에서 일반적으로 통용되는 Loggig 라이브러리인 Logback이라는 프레임워크를 사용을 하고 있었다. 즉, LoggerFactory에서 받아온 Logger는 logback의 logger에서 제공하는 logger 인터페이스다. 
+logback은 SpringBoot에서 기본으로 사용하는 Logging Framework이다. 그렇기 때문에 우리가 상세하게 logging의 설정을 하고 싶다면 logback 라이브러리를 사용하는 방법에 대해서 알아봐야한다. logback 같은 경우에는 Appender라는 인터페이스를 통해 logger의 동작을 정의한다. (즉 어떤 형식으로 log를 출력하고, 어디에다가 log를 저장을 할지같은 것들을 설정을 할 수 있는 인터페이스의 일부분이다.) 또한 xml을 통해 log level및 Appender등을 정의할 수 있다.
+
+4. resource파일에다가 logback-spring.xml이라는 새로운 file을 만들어준다.
+
+4-1. ConsoleAppender 에 대한 설정 -> console에서 나오는 log 결과에 대해서 어떤식으로 출력을 할 것인지에 대한 설정이다.
+이것은 spring에서 요청을 하는 표제이다. 이 파일이 존재하면 springBoot가 실행될 때 자동으로 이 파일을 읽어들여서 설정을 하게된다.
+element에다가 appender를 선언해준다.
+    <appender name="Console"
+              class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %black(%d{ISO8601}) %highlight(%-5level) [%blue(%t)] %yellow(%C{1.}): %msg%n%throwable
+            </Pattern>
+        </layout>
+    </appender>
+-> 이것이 나중에 logback 라이브러리에서 읽어들여서 appender 인스턴스로서 활용을 하는데 필요한 설정들이다.
+그래서 이 appender의 name 은 일종의 변수라고 생각하고 Console이라는 이름을 가진 변수에다가 appender인터페이스를 적용을 해준다라고 보면 된다.
+그 다음 class는 logback에서 제공을 하고 있는 appender 구현체 중에 하나이다.
+layout에 PatternLayout은 어떤 어떠한 특정한 패턴을 줌으로서 메시지가 어떻게 작성이 될 것인지에 대한 부분을 정의하기 위한 클래스이다. 그래서 밑의 pattern을 보게 되면 어떻게 작동을하는지 짐작을 할 수 있다.
+
+이렇게 설정을 하고 실행을 하면 logs라는 파일이 생성이 되고, 그 안에 archived라는 파일도 생성이 되었을 것이다. 이 파일 안에는 내가 설정한 log에 대한 기록이 저장되어 있다.
+
+4-2. Rolling File이라는 Appender에 대한 설정 -> 파일에다가 출력한다.
+
+<appender name="RollingFile"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS}/spring-boot-logger.log</file>
+        <encoder
+                class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>%d %p %C{1.} [%t] %m%n</Pattern>
+        </encoder>
+
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOGS}/archived/spring-boot-logger-%d{yyyy-MM-dd-HH-mm}.%i.log
+            </fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+                <maxHistory>5</maxHistory>
+                <totalSizeCap>20GB</totalSizeCap>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+출력하는 파일에 대한 정의를 <file>을 통해서 정의한다. 이때 ${LOGS}에 들어갈 값은 property에 value에 정의된 ./logs 의 값이 들어가게 된다.
+<encoder>는 파일을 출력함에 있어서 ConsoleAppender에서 <layout>과 동일한 역할을 하게 된다. 어떠한 형식(pattern)으로 출력을 할 것인지에 대한 부분이 나와있다. 
+<rollingPolicy>는 RollingFile의 핵심적인 부분이다. <rollingPolicy>는 기본적으로 일정한 규칙을 통해 파일을 생성을 해서, 이전에 작성되었던 로그를 해당하는 파일로 옮겨 받고, 실제 돌아가고 있는 spring-boot-logger-.log 라는 log파일은 비워주는 것이 <rollingPolicy>로, 어떠한 규칙을 가지고 그 로그를 돌리면서 백업을 하고, 백업 내역을 지우고 할 것인지같은 것을 정의해줄 수 있는 부분이다.
+<maxFileSize>는 하나의 파일이 도달할 수 있는 최대 크기에 대한 한계를 지정할 수 있다. 즉, 한 파일이 maxFileSize를 넘어가면 그 파일을 끊고 다음파일에 log를 작성하는 것이다. maxHistory는 archived에 들어가게 되는 로그 파일의 개수가 총 몇개가 될 수 있는지 정하는 것이다.
+<totalSizeCap>은 결과적으로 모든 로그 파일들의 최대 사이즈에 대한 설정이다.
+<rollingPolicy>에서 주기를 설정할 때는 이름을 기준으로 설정할 수 있다. 즉 <pattern>에서 %d 다음에 들어오는 yyyy-MM-dd-HH-mm-ss 부분에서 설정할 수 있다.
+
+4-3. log level 설정도 이 xml 파일에서 설정할 수 있다. yml파일에서 설정했던 설정도 logback에 있는 설정과 유사하게 작동을 한다.
+
+    <root level="warn">
+       <appender-ref ref="RollingFile" />
+        <appender-ref ref="Console" />
+    </root>
+
+<!--    <logger name="dev.aquashdw" level="trace" additivity="false">-->
+<!--        <appender-ref ref="RollingFile" />-->
+<!--    </logger>-->
+
+yml파일과 유사하게 root라는 설정이 있다. 이것은 기본적으로 모든 패키지들이 적용되어야될 규칙에 대한 내용이다.
+<logger의 name에 패키지 이름을 제공하므로서 어떠한 패키지를 기준으로 로그 레벨을 설정할 수 있다.
+additivity라는 attribute가 하나 존재하는데, 이것은 root에서는 존재할 수 없다. 이것은 root logger와 별개로 작동을 할 것인지에 대한 설정이다. 만약 이 값이 true이면 root에서 출력하도록 되어있는 것과 해당 패키지에서 출력하도록 되어있는 것이 중복이 되어있다면 2번 출력하게 된다. 그래서 결과적으로는 false로 두는 것이 좋다. appender-ref는 이 설정에서 어떠한 appender를 사용을 할지에 대한 설정이다. 즉 appender-ref를 통해서 우리가 만들어놓은 log설정을 가져다가 사용을 한다.
+
+5. logback-spring.xml 파일을 복사한 다음 logback-spring-test.xml 파일로 붙여넣는다. 이 상태에서 어떠한 log 설정 파일을 사용을 할지 정할 수 있다 .
+application-test.yml에다가 
+logging:
+  config: classpath:logback-spring-test.xml
+
+내용을 추가하면 profile이 test일 때 logback-spring-test.xml에 설정했던 로그 설정에 따라서 로그가 나온다.
+이렇게 같은 resource 패키지 안에 설정을 하면 classpath를 통해서 기준으로 설정파일을 사용하고, 만약에 이러한 설정파일들을 밖에다가 두고 사용을 하고 싶다면 jpa 파일에다가 log-back-spring-external.xml라는 설정 파일을 만들고 terminal에 java -Dlogging.config=log-back-spring-external.xml -jar build/libs/jpa-0.0.1-SNAPSHOT.jar를 통해서 해당 설정파일을 실행할 수 있다.

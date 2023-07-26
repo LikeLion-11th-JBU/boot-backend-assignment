@@ -1,0 +1,170 @@
+Exception(예외) - 특수한 처리를 필요로 하는 비상적 또는 예외적 상황
+
+java 에서 예외처리를 할 때는
+첫 번째 try catch를 통해서 try(예외가 발생할 수 있는 구역) 안쪽 코드에서 예외가 발생하면 catch에서 지정한 예외가 발생했을 때의 처리법을 정의한다. finally는 예외의 발생 여부와 관계없이 항상 실행하는 코드이다. 
+
+두 번째는 throws라는 키워드를 붙여줌으로서 예외를 처리할 수 있다. throw NullPointException을 쓰면 예외 처리를 호출하는 대상에게 책임을 전가한다. 즉, throw 문이 적혀있는 함수를 호출하게 되면 예외 처리를 이 함수를 호출하는 대상에게 책임을 전가한다. 
+
+SpringBoot의 예외처리 방법
+1. ResponseStatusException    -> 단발적 예외 상황(이것을 위해서 강한 예외처리를 만들 필요가 없을 때)
+2. @ExceptionHandler          -> Controller 내부의 예외가(Controller내부의 함수에 붙여서 선언함으로써 어떤 특정한 예외에 대해서 처리할 수 있다)
+3. HandlerExceptionResolver   -> 예외 처리 Handler로 실제로 예외를 처리를 하는걸 구성함으로서 application전체에 예외처리를 적용하는 방법
+4. @ControllerAdvice          -> Bean의 일종으로 ExceptionHandler 모아놓은 역할을 한다.
+
+
+1-1. 새로운 클래스인 ExceptTestController를 만든 다음 id를 받아오는 GetMapping에 ResponseStatusException을 사용해본다.
+@RestController
+@RequestMapping("except")
+public class ExceptTestController {
+    @GetMapping("{id}")
+    public void throwException(@PathVariable int id){
+        switch (id){
+            case 1:
+                throw new PostNotExistException();
+            default:
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND)
+        }
+    }
+}
+
+-> 기존 프로젝트의 PostDao에도 ResponseStatusException이 들어가 있는 것을 볼 수 있다. throw new ResponseStatusException을 해주면 SpringBoot 내부에서 자동적으로 예외를 처리할 준비가 되어있다는 점이 가장 큰 장점이다. PostDao에 있는 ResponseStatusException은 찾고자하는 타켓의 PostEntity가 없다라는 예외를 처리하고 있기 때문에 동일한 ResponseStatusException이 많이 선언되어 있는 것을 확인할 수 있다. 상용단계에서는 해당 ResponseStatusException에 대한 내용을 모아 다르게 예외처리를 해줘야한다. 또한 BoardEntity에도 동일한 ResponseStatusException가 들어가 있는 것을 볼 수 있다. 그렇기 때문에 ResponseStatusException만 사용한다면 게시판과 게시글의 관계를 생각했을 때 ResponseStatusException이 게시판이 없는 것인지, 게시글이 없는 것인지, 또는 게시판과 게시글이 서로 맞지 않아서 생기는 문제인지 같은 부분에 대한 정보를 바로 나타내기가 어려워 질 것이다. 그렇기 때문에 ResponseStatusException은 초기 단계에서 많이 사용을 한다. 
+
+2-1. ExceptionHandler라는 어노테이션을 ExceptTestController안의 함수에 붙인다. ExceptionHandler라는 어노테이션은 RestController나 Controller 내부에서 선언할 수 있다. ExceptionHandler 어노테이션을 함수에 붙여주게 된다면, 그 함수는 지정된 예외에 대해서, 그 예외를 처리를 해줄 때 동작을 하는 함수가 된다. 즉, Controller에 요청이 들어올 때 예외가 발생하고, 그 예외에 대해서 정의가 되어 있는 함수가 있다면 해당하는 함수로 가서 그 함수의 소스 코드를 진행을 한다. 
+
+2-2. exception라는 패키지를 만들어서 예외를 정의한다. 그리고 해당 패키지에 상속받을 상위 예외를 만들기 위해 BaseException이라는 클래스를 생성한다.
+그리고 RuntimeException을 상속받는다. 그러면 이 class는 Runtime 발생하는 Exception으로서 언제든 사용할 준비가 되어있는 Exception이 된다. 
+
+2-3. 또한 자기 자신을 사용할 수 없는 추상클래스로서 정의를 한다 abstract
+
+public abstract class BaseException extends RuntimeException{
+    
+}
+
+2-4. PostNotExistException라는 클래스를 만든다. 이 클래스는 BaseException을 상속받아서, 단순하게 상위객체를 상속받은 객체로 활동한다.
+
+2-5. 이제 ExceptTestController의 ExceptionHandler 어노테이션에 BaseException.class를 넣어준다. 이렇게 하면 이 함수는 ExceptTestController 내부에서 발생하는 모든 BaseException에 대해서 처리를 해주게 된다.
+    @ExceptionHandler(BaseException.class)
+    public void handleBaseException(BaseException Exception,  HttpServletResponse response){
+
+    }
+
+또한 이 함수의 인자로 처리하고자 하는 Exception을 받아줄 수 있다. 그 다음 그 내용을 HttpServletResponse를 통해 확인할 수 있다. 또한 HttpServletResponse 대신에 ResponseStatus 어노테이션안에 HttpStatus.BAD_REQUEST를 넣어주고 함수에 붙여주면 동일한 내용을 확인할 수 있다.
+
+2-6. exception이라는 패키지에 ErrorResponseDto라는 클래스를 만들어 handleBaseException 함수에서 돌려줄 내용을 만든다. 
+public class ErrorResponseDto {
+    private String message;
+    과 빈생성자, 생성자 getter와 setter, toString을 만들어준다. 
+
+2-7. 그 다음 handleBaseException의 반환값을 ErrorResponseDto로 바꿔주고 return에 return new ErrorResponseDto(exception.getMessage()); 를 넣는다.
+    @ExceptionHandler(BaseException.class)
+    public ErrorResponseDto handleBaseException(BaseException exception, HttpServletResponse response){
+        return new ErrorResponseDto(exception.getMessage());
+
+    }
+
+2-8. 이렇게 하면 결과적으로 message가 없을 것이므로 메시지를 줄수 있도록 BaseException 과PostNotExistException 에 내용을 추가한다.
+
+public abstract class BaseException extends RuntimeException{
+    public BaseException(String message) {
+        super(message);
+    }
+
+}
+
+
+public class PostNotExistException extends BaseException {
+    public PostNotExistException() {
+        super("target post does net exist");
+    }
+}
+
+2-8. exception 패키지 안에 InconsistentDataException라는 클래스를 만들어주고 BaseException을 상속한다.
+public class PostNotInBoardException extends BaseException {
+    public PostNotInBoardException(){
+        super("Post not in board");
+    }
+}
+
+-> 이것은 게시판에 있는 게시글을 받고자 하는데, 그 게시판에 그 게시글이 없었을 때 발생하는 예외처리이다. 
+
+그다음 이것을 throwException의 case2로 만든다.
+case 2:
+                throw new PostNotInBoardException();
+
+
+ExceptionHandler는 자신이 선언한 class 내부에서만 실행이 되는 예외처리 방식이다.
+즉 ExceptionHandler 파라미터 안에 BaseException.class를 넣은 다음 함수에 붙여주면 이 함수는 class 내부의 모든 BaseException를 처리해므로, 위 throwException 함수안 case에 있는 BaseException을 상속받는 두개의 PostNotExistException와 PostNotInBoardException 는 handleBaseException에서 돌려주는 ErrorResponseDto의 메시지를 받는다.  
+
+2-9. PostController에 
+    @GetMapping("test-exception")
+    public void throwException(){
+        throw new PostNotExistException();
+    }
+
+를 하면 ExceptionHandler는 작동하지 않는다. 즉, ExceptTestController에서만 해당 ExceptionHandler가 작동한다.
+
+3. HandlerExceptionResolver 만들기 (Spring에서 제공하는 인터페이스중 하나이다. 이것을 구현하게 되면 전체 어플리케이션에서 발생하는 예외를 처리할 수 있다.)
+
+3-1. handler라는 패키지를 만든다. 그 다음 PostExceptionResolver라는 클래스를 만든다. 그리고 이 클래스를 extends AbstractHandlerExceptionResolver를 한다.
+public class PostExceptionResolver extends AbstractHandlerExceptionResolver {
+   @Override
+    protected ModelAndView doResolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        return null;    -> return null이면 HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex에 대해서 처리는 하지 못했다는 의미이다. 
+    }
+}
+
+-> 이렇게 ExceptionResolver를 구현하게 된다면, 이런 ExceptionResolver에는 우리 만들게 되는 ExceptionHandler 또는 ControllerAdvice만큼 다양한 ExceptionResolver가 존재한다. 그렇기 때문에 ExceptionResolver들이 모여서 어떠한 특정한 예외가 왔을 때, 그것을 처리할 수 있는 Resolver가 있는지를 살펴보면서 결과적으로 처리를 진행하게 되는 것이다. 또한 Component 어노테이션을 붙여줘야지 Bean에 등록이 되서 자동으로 들어간다.
+
+@Component
+public class PostExceptionResolver extends AbstractHandlerExceptionResolver {
+    @Override
+    protected ModelAndView doResolveException(HttpServletRequest request,
+                                              HttpServletResponse response,
+                                              Object handler,
+                                              Exception ex) {
+        logger.debug(ex.getClass());    // debug로 Exception의 getClass를 찍어보려고 하고 있다.
+        if (ex instanceof BaseException){
+            response.setStatus(HttpStatus.BAD_REQUEST.value());// 지금 ServletResponse를 받아온 상태이기 때문에 ServletResponse를 조작을 해줘야한다.
+            try {// 또한 반환값으로 ModelAndView 를 돌려주고 있고, 이말은 lander을 할 view를 돌려줬으면 한다라는 뜻이고, API서버에서 view를 돌려주지는 않기 때문에, 그것을 구현하는데 try를 사용한다.
+                response.getOutputStream().print(
+                        new ObjectMapper().writeValueAsString(
+                                new ErrorResponseDto("in resolver, message: " + ex.getMessage())
+                        )  // 이 안에다가 글(json 형식의 String)을 실제로 작성을 해줘야한다. ObjectMapper같은 경우 Spring 내부적으로 dataserial라이즈, 즉 모델을 json으로 바꾸는 과정을 도와주기 위한라이브러리중 하나이다.
+                );
+                response.setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE);// 여기까지가 이 Object까지 작성을 한 것이다. 그리고 이 Object가 어떤 형식으로 작성이 된 것인지를 알려줘야한다.
+                return new ModelAndView(); // content-type의 header를 추가하고, new ModelAndView를 돌려준다.
+            }catch (IOException e){
+                logger.warn("Handling exception caused exception: {}", e);
+            }
+        }
+        return null;
+    }
+}
+
+4-1. PostControllerAdvice 클래스를  handler 패키지에 생성한다. 그 다음 클래스 위에 ControllerAdvice 어노테이션을 붙여준다.
+@ControllerAdvice는 같은 경우는 모든 Controller에 있는 ExceptionHandler를 가져오자라는 관점에서 생긴 Bean 어노테이션중 하나이다. 즉, Bean으로 등록이 가능한 Component의 일종이다.
+
+4-2. 여기에는 ExceptionHandler를 등록할 수 있다. 사용하는 것도 다른 Controller에서 작성한 것처럼 동일하게 작성해주면 된다. 
+@ControllerAdvice
+public class PostControllerAdvice {
+    @ExceptionHandler(BaseException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponseDto handleException(BaseException exception){
+        return new ErrorResponseDto(exception.getMessage());
+
+    }
+}
+
+4-3. 몇가지 주의점은 ExceptionHandler를 사용할 때 ()안에 작성한 Exception class와 함수의 파라미터의 Exception class가 꼭 같을 필요는 없다. 같지 않아도 컴파일은 된다. 대신에 실제로 그 Exception이 문제가 생기면 주입이 안되기 때문에 문제가 된다. -> ResponseBody를 함수 반환형태 뒤에 붙여놓은 이유는 ExceptTestController에서 말했듯이 ErrorResponseDto handleBaseException는 사실상 Controller의 RequestMapping 함수와 비슷하다. 무언가 처리를 하다가 문제가 발생하면 그때 부터 이 함수로 들어가거나 들어가지 않거나가 정의가 된다. ControllerAdvice도 동일하지만 어느 Controller에 종속적이지는 않다. 
+
+=>ControllerAdvice와 ResponseBody를 사용해서 ErrorResponseDto를 json의 형태로 보내주고 있다. ControllerAdvice를 RestControllerAdvice로 바꾸면 ErrorResponseDto이라는 반환형 뒤에 @RequestBody를 빼줘도 된다.
+
+4-4. validation과 같이 사용하려면 RestControllerAdvice안에 @ExceptionHandler()안에 validation을 못지킴으로서 발생하는 Exception을 넣어준다.
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public  ErrorResponseDto handleValidException(
+            MethodArgumentNotValidException exception      // 실제로 발생한 Exception
+    ){
+        return new ErrorResponseDto(exception.getMessage());
+    }
+
+ErrorResponseDto 같은 경우는 메시지를 하나만 주는데, validation같은 경우는 에러가 하나가 아닐 때도 많다. 그것에 대해서 대응을 해도 좋다.
