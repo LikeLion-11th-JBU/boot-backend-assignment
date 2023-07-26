@@ -14,3 +14,6 @@
 - MySQL Driver
 - Lombok
 - Thymeleaf
+
+# Swagger 진입점
+- http://localhost:8080/swagger-ui/index.html
