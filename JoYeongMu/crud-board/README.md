@@ -40,7 +40,7 @@
 # ✏️ API 명세서
 
 - Swagger V3 (Springdoc)
-- localhost:8080/spring-ui/index.html
+- http://localhost:8080/swagger-ui/index.html
 
 # 📀 DB
 
