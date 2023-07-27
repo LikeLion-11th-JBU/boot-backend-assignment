@@ -1,0 +1,11 @@
+CRUD Create(저장) Read(열람) Update(변경) Destroy(삭제)
+
+많은 웹 서비스가 다루고 있는 CRUD
+
+
+스프링부트에서 관계형 데이터베이스를 주로 사용(RDBMS)
+표 형식으로 관리
+
+column - 항목(attributes , fields) (세로)
+Row - 개별 객체 (가로)
+Table - 표 전체

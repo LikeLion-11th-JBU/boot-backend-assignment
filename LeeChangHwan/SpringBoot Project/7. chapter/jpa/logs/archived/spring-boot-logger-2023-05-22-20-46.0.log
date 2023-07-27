@@ -1,0 +1,238 @@
+2023-05-22 20:46:39,437 TRACE org.springframework.boot.logging.DeferredLog [main] RandomValuePropertySource add to Environment
+2023-05-22 20:46:39,456 TRACE org.springframework.boot.logging.DeferredLog [main] Post-processing environment to add config data
+2023-05-22 20:46:39,457 TRACE org.springframework.boot.logging.DeferredLog [main] Building config data environment contributors
+2023-05-22 20:46:39,458 TRACE org.springframework.boot.logging.DeferredLog [main] Creating wrapped config data contributor for 'configurationProperties'
+2023-05-22 20:46:39,459 TRACE org.springframework.boot.logging.DeferredLog [main] Creating wrapped config data contributor for 'servletConfigInitParams'
+2023-05-22 20:46:39,464 TRACE org.springframework.boot.logging.DeferredLog [main] Creating wrapped config data contributor for 'servletContextInitParams'
+2023-05-22 20:46:39,466 TRACE org.springframework.boot.logging.DeferredLog [main] Creating wrapped config data contributor for 'systemProperties'
+2023-05-22 20:46:39,468 TRACE org.springframework.boot.logging.DeferredLog [main] Creating wrapped config data contributor for 'systemEnvironment'
+2023-05-22 20:46:39,469 TRACE org.springframework.boot.logging.DeferredLog [main] Creating wrapped config data contributor for 'random'
+2023-05-22 20:46:39,470 TRACE org.springframework.boot.logging.DeferredLog [main] Adding initial config data import from location 'optional:file:./;optional:file:./config/;optional:file:./config/*/'
+2023-05-22 20:46:39,473 TRACE org.springframework.boot.logging.DeferredLog [main] Adding initial config data import from location 'optional:classpath:/;optional:classpath:/config/'
+2023-05-22 20:46:39,475 TRACE org.springframework.boot.logging.DeferredLog [main] Processing initial config data environment contributors without activation context
+2023-05-22 20:46:39,483 TRACE org.springframework.boot.logging.DeferredLog [main] Processing imports for phase BEFORE_PROFILE_ACTIVATION. no activation context
+2023-05-22 20:46:39,486 TRACE org.springframework.boot.logging.DeferredLog [main] Processing imports [optional:file:./;optional:file:./config/;optional:file:./config/*/]
+2023-05-22 20:46:39,487 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application.yaml
+2023-05-22 20:46:39,488 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application.yml
+2023-05-22 20:46:39,501 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application.xml
+2023-05-22 20:46:39,506 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application.properties
+2023-05-22 20:46:39,507 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application.yaml
+2023-05-22 20:46:39,507 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application.yml
+2023-05-22 20:46:39,508 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application.xml
+2023-05-22 20:46:39,523 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application.properties
+2023-05-22 20:46:39,524 TRACE org.springframework.boot.logging.DeferredLog [main] Considering resource file [.] from location optional:file:./;optional:file:./config/;optional:file:./config/*/
+2023-05-22 20:46:39,525 TRACE org.springframework.boot.logging.DeferredLog [main] Loading file [.] using loader org.springframework.boot.context.config.StandardConfigDataLoader
+2023-05-22 20:46:39,532 TRACE org.springframework.boot.logging.DeferredLog [main] Loaded resource file [.] from location optional:file:./;optional:file:./config/;optional:file:./config/*/
+2023-05-22 20:46:39,534 TRACE org.springframework.boot.logging.DeferredLog [main] Imported 1 resource [file [.]]
+2023-05-22 20:46:39,535 TRACE org.springframework.boot.logging.DeferredLog [main] Processing imports [optional:classpath:/;optional:classpath:/config/]
+2023-05-22 20:46:39,536 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/application.yaml
+2023-05-22 20:46:39,538 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/application.xml
+2023-05-22 20:46:39,539 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/application.properties
+2023-05-22 20:46:39,540 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application.yaml
+2023-05-22 20:46:39,541 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application.yml
+2023-05-22 20:46:39,543 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application.xml
+2023-05-22 20:46:39,550 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application.properties
+2023-05-22 20:46:39,552 TRACE org.springframework.boot.logging.DeferredLog [main] Considering resource class path resource [application.yml] from location optional:classpath:/;optional:classpath:/config/
+2023-05-22 20:46:39,552 TRACE org.springframework.boot.logging.DeferredLog [main] Loading class path resource [application.yml] using loader org.springframework.boot.context.config.StandardConfigDataLoader
+2023-05-22 20:46:39,553 TRACE org.springframework.boot.logging.DeferredLog [main] Loaded resource class path resource [application.yml] from location optional:classpath:/;optional:classpath:/config/
+2023-05-22 20:46:39,554 TRACE org.springframework.boot.logging.DeferredLog [main] Imported 1 resource [class path resource [application.yml]]
+2023-05-22 20:46:39,555 TRACE org.springframework.boot.logging.DeferredLog [main] Processed imports for of 2 contributors
+2023-05-22 20:46:39,556 TRACE org.springframework.boot.logging.DeferredLog [main] Creating config data activation context from initial contributions
+2023-05-22 20:46:39,556 TRACE org.springframework.boot.logging.DeferredLog [main] Processing config data environment contributors with initial activation context
+2023-05-22 20:46:39,570 TRACE org.springframework.boot.logging.DeferredLog [main] Processing imports for phase BEFORE_PROFILE_ACTIVATION. [ConfigDataActivationContext@30f5a68a cloudPlatform = [null], profiles = [null]]
+2023-05-22 20:46:39,571 TRACE org.springframework.boot.logging.DeferredLog [main] Processed imports for of 0 contributors
+2023-05-22 20:46:39,572 TRACE org.springframework.boot.logging.DeferredLog [main] Deducing profiles from current config data environment contributors
+2023-05-22 20:46:39,572 TRACE org.springframework.boot.logging.DeferredLog [main] Processing config data environment contributors with profile activation context
+2023-05-22 20:46:39,573 TRACE org.springframework.boot.logging.DeferredLog [main] Processing imports for phase AFTER_PROFILE_ACTIVATION. [ConfigDataActivationContext@1e1d3956 cloudPlatform = [null], profiles = [Profiles@4f2c9ba6 active = '[test]', default = '[default]', accepted = '[test]']]
+2023-05-22 20:46:39,573 TRACE org.springframework.boot.logging.DeferredLog [main] Processing imports [optional:file:./;optional:file:./config/;optional:file:./config/*/]
+2023-05-22 20:46:39,574 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application.yaml
+2023-05-22 20:46:39,575 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application.yml
+2023-05-22 20:46:39,576 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application.xml
+2023-05-22 20:46:39,576 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application.properties
+2023-05-22 20:46:39,581 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application.yaml
+2023-05-22 20:46:39,581 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application.yml
+2023-05-22 20:46:39,582 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application.xml
+2023-05-22 20:46:39,583 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application.properties
+2023-05-22 20:46:39,584 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application-test.yaml
+2023-05-22 20:46:39,584 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application-test.yml
+2023-05-22 20:46:39,585 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application-test.xml
+2023-05-22 20:46:39,585 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./application-test.properties
+2023-05-22 20:46:39,586 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application-test.yaml
+2023-05-22 20:46:39,586 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application-test.yml
+2023-05-22 20:46:39,587 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application-test.xml
+2023-05-22 20:46:39,588 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource file:./config/application-test.properties
+2023-05-22 20:46:39,588 TRACE org.springframework.boot.logging.DeferredLog [main] Considering resource file [.] from location optional:file:./;optional:file:./config/;optional:file:./config/*/
+2023-05-22 20:46:39,589 TRACE org.springframework.boot.logging.DeferredLog [main] Already loaded resource file [.] ignoring location optional:file:./;optional:file:./config/;optional:file:./config/*/
+2023-05-22 20:46:39,590 TRACE org.springframework.boot.logging.DeferredLog [main] Considering resource file [.] from location optional:file:./;optional:file:./config/;optional:file:./config/*/
+2023-05-22 20:46:39,592 TRACE org.springframework.boot.logging.DeferredLog [main] Already loaded resource file [.] ignoring location optional:file:./;optional:file:./config/;optional:file:./config/*/
+2023-05-22 20:46:39,592 TRACE org.springframework.boot.logging.DeferredLog [main] Nothing imported
+2023-05-22 20:46:39,593 TRACE org.springframework.boot.logging.DeferredLog [main] Processing imports [optional:classpath:/;optional:classpath:/config/]
+2023-05-22 20:46:39,596 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/application.yaml
+2023-05-22 20:46:39,598 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/application.xml
+2023-05-22 20:46:39,600 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/application.properties
+2023-05-22 20:46:39,601 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application.yaml
+2023-05-22 20:46:39,602 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application.yml
+2023-05-22 20:46:39,603 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application.xml
+2023-05-22 20:46:39,603 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application.properties
+2023-05-22 20:46:39,603 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/application-test.yaml
+2023-05-22 20:46:39,604 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/application-test.xml
+2023-05-22 20:46:39,605 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/application-test.properties
+2023-05-22 20:46:39,605 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application-test.yaml
+2023-05-22 20:46:39,606 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application-test.yml
+2023-05-22 20:46:39,606 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application-test.xml
+2023-05-22 20:46:39,607 TRACE org.springframework.boot.logging.DeferredLog [main] Skipping missing resource classpath:/config/application-test.properties
+2023-05-22 20:46:39,608 TRACE org.springframework.boot.logging.DeferredLog [main] Considering resource class path resource [application-test.yml] from location optional:classpath:/;optional:classpath:/config/
+2023-05-22 20:46:39,608 TRACE org.springframework.boot.logging.DeferredLog [main] Loading class path resource [application-test.yml] using loader org.springframework.boot.context.config.StandardConfigDataLoader
+2023-05-22 20:46:39,609 TRACE org.springframework.boot.logging.DeferredLog [main] Loaded resource class path resource [application-test.yml] from location optional:classpath:/;optional:classpath:/config/
+2023-05-22 20:46:39,610 TRACE org.springframework.boot.logging.DeferredLog [main] Considering resource class path resource [application.yml] from location optional:classpath:/;optional:classpath:/config/
+2023-05-22 20:46:39,615 TRACE org.springframework.boot.logging.DeferredLog [main] Already loaded resource class path resource [application.yml] ignoring location optional:classpath:/;optional:classpath:/config/
+2023-05-22 20:46:39,617 TRACE org.springframework.boot.logging.DeferredLog [main] Imported 1 resource [class path resource [application-test.yml]]
+2023-05-22 20:46:39,618 TRACE org.springframework.boot.logging.DeferredLog [main] Processed imports for of 2 contributors
+2023-05-22 20:46:39,619 TRACE org.springframework.boot.logging.DeferredLog [main] Applying config data environment contributions
+2023-05-22 20:46:39,619 TRACE org.springframework.boot.logging.DeferredLog [main] Adding imported property source 'Config resource 'class path resource [application-test.yml]' via location 'optional:classpath:/''
+2023-05-22 20:46:39,619 TRACE org.springframework.boot.logging.DeferredLog [main] Adding imported property source 'Config resource 'class path resource [application.yml]' via location 'optional:classpath:/''
+2023-05-22 20:46:39,620 TRACE org.springframework.boot.logging.DeferredLog [main] Setting default profiles: [default]
+2023-05-22 20:46:39,621 TRACE org.springframework.boot.logging.DeferredLog [main] Setting active profiles: [test]
+2023-05-22 20:46:39,653 TRACE org.springframework.boot.diagnostics.FailureAnalyzers$LoggingInstantiationFailureHandler [main] Skipping org.springframework.boot.autoconfigure.diagnostics.analyzer.NoSuchBeanDefinitionFailureAnalyzer: Class [org.springframework.boot.autoconfigure.diagnostics.analyzer.NoSuchBeanDefinitionFailureAnalyzer] has no suitable constructor
+2023-05-22 20:46:39,668 TRACE org.springframework.boot.diagnostics.FailureAnalyzers$LoggingInstantiationFailureHandler [main] Skipping org.springframework.boot.autoconfigure.flyway.FlywayMigrationScriptMissingFailureAnalyzer: org.springframework.boot.autoconfigure.flyway.FlywayMigrationScriptMissingFailureAnalyzer
+2023-05-22 20:46:39,684 TRACE org.springframework.boot.diagnostics.FailureAnalyzers$LoggingInstantiationFailureHandler [main] Skipping org.springframework.boot.autoconfigure.jdbc.DataSourceBeanCreationFailureAnalyzer: Class [org.springframework.boot.autoconfigure.jdbc.DataSourceBeanCreationFailureAnalyzer] has no suitable constructor
+2023-05-22 20:46:39,720 TRACE org.springframework.boot.diagnostics.FailureAnalyzers$LoggingInstantiationFailureHandler [main] Skipping org.springframework.boot.autoconfigure.jooq.NoDslContextBeanFailureAnalyzer: Class [org.springframework.boot.autoconfigure.jooq.NoDslContextBeanFailureAnalyzer] has no suitable constructor
+2023-05-22 20:46:39,732 TRACE org.springframework.boot.diagnostics.FailureAnalyzers$LoggingInstantiationFailureHandler [main] Skipping org.springframework.boot.autoconfigure.r2dbc.ConnectionFactoryBeanCreationFailureAnalyzer: Class [org.springframework.boot.autoconfigure.r2dbc.ConnectionFactoryBeanCreationFailureAnalyzer] has no suitable constructor
+2023-05-22 20:46:39,769 TRACE org.springframework.boot.diagnostics.FailureAnalyzers$LoggingInstantiationFailureHandler [main] Skipping org.springframework.boot.diagnostics.analyzer.BeanCurrentlyInCreationFailureAnalyzer: Class [org.springframework.boot.diagnostics.analyzer.BeanCurrentlyInCreationFailureAnalyzer] has no suitable constructor
+2023-05-22 20:46:39,804 TRACE org.springframework.boot.diagnostics.FailureAnalyzers$LoggingInstantiationFailureHandler [main] Skipping org.springframework.boot.diagnostics.analyzer.MutuallyExclusiveConfigurationPropertiesFailureAnalyzer: Class [org.springframework.boot.diagnostics.analyzer.MutuallyExclusiveConfigurationPropertiesFailureAnalyzer] has no suitable constructor
+2023-05-22 20:46:39,809 TRACE org.springframework.boot.diagnostics.FailureAnalyzers$LoggingInstantiationFailureHandler [main] Skipping org.springframework.boot.diagnostics.analyzer.NoUniqueBeanDefinitionFailureAnalyzer: Class [org.springframework.boot.diagnostics.analyzer.NoUniqueBeanDefinitionFailureAnalyzer] has no suitable constructor
+2023-05-22 20:46:39,826 TRACE org.springframework.boot.diagnostics.FailureAnalyzers$LoggingInstantiationFailureHandler [main] Skipping org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertyValueFailureAnalyzer: Class [org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertyValueFailureAnalyzer] has no suitable constructor
+2023-05-22 20:46:39,835 TRACE org.springframework.boot.diagnostics.FailureAnalyzers$LoggingInstantiationFailureHandler [main] Skipping org.springframework.boot.liquibase.LiquibaseChangelogMissingFailureAnalyzer: liquibase/exception/ChangeLogParseException
+2023-05-22 20:46:39,866 TRACE org.springframework.boot.diagnostics.FailureAnalyzers [main] FailureAnalyzer null failed
+java.lang.NullPointerException: null
+	at org.springframework.boot.diagnostics.FailureAnalyzers.analyze(FailureAnalyzers.java:126)
+	at org.springframework.boot.diagnostics.FailureAnalyzers.reportException(FailureAnalyzers.java:119)
+	at org.springframework.boot.SpringApplication.reportFailure(SpringApplication.java:811)
+	at org.springframework.boot.SpringApplication.handleRunFailure(SpringApplication.java:785)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:317)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1292)
+	at dev.likelion.jpa.JpaApplication.main(JpaApplication.java:12)
+2023-05-22 20:46:39,868 TRACE org.springframework.boot.diagnostics.FailureAnalyzers [main] FailureAnalyzer null failed
+java.lang.NullPointerException: null
+	at org.springframework.boot.diagnostics.FailureAnalyzers.analyze(FailureAnalyzers.java:126)
+	at org.springframework.boot.diagnostics.FailureAnalyzers.reportException(FailureAnalyzers.java:119)
+	at org.springframework.boot.SpringApplication.reportFailure(SpringApplication.java:811)
+	at org.springframework.boot.SpringApplication.handleRunFailure(SpringApplication.java:785)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:317)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1292)
+	at dev.likelion.jpa.JpaApplication.main(JpaApplication.java:12)
+2023-05-22 20:46:39,870 TRACE org.springframework.boot.diagnostics.FailureAnalyzers [main] FailureAnalyzer null failed
+java.lang.NullPointerException: null
+	at org.springframework.boot.diagnostics.FailureAnalyzers.analyze(FailureAnalyzers.java:126)
+	at org.springframework.boot.diagnostics.FailureAnalyzers.reportException(FailureAnalyzers.java:119)
+	at org.springframework.boot.SpringApplication.reportFailure(SpringApplication.java:811)
+	at org.springframework.boot.SpringApplication.handleRunFailure(SpringApplication.java:785)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:317)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1292)
+	at dev.likelion.jpa.JpaApplication.main(JpaApplication.java:12)
+2023-05-22 20:46:39,871 TRACE org.springframework.boot.diagnostics.FailureAnalyzers [main] FailureAnalyzer null failed
+java.lang.NullPointerException: null
+	at org.springframework.boot.diagnostics.FailureAnalyzers.analyze(FailureAnalyzers.java:126)
+	at org.springframework.boot.diagnostics.FailureAnalyzers.reportException(FailureAnalyzers.java:119)
+	at org.springframework.boot.SpringApplication.reportFailure(SpringApplication.java:811)
+	at org.springframework.boot.SpringApplication.handleRunFailure(SpringApplication.java:785)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:317)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1292)
+	at dev.likelion.jpa.JpaApplication.main(JpaApplication.java:12)
+2023-05-22 20:46:39,872 TRACE org.springframework.boot.diagnostics.FailureAnalyzers [main] FailureAnalyzer null failed
+java.lang.NullPointerException: null
+	at org.springframework.boot.diagnostics.FailureAnalyzers.analyze(FailureAnalyzers.java:126)
+	at org.springframework.boot.diagnostics.FailureAnalyzers.reportException(FailureAnalyzers.java:119)
+	at org.springframework.boot.SpringApplication.reportFailure(SpringApplication.java:811)
+	at org.springframework.boot.SpringApplication.handleRunFailure(SpringApplication.java:785)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:317)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1292)
+	at dev.likelion.jpa.JpaApplication.main(JpaApplication.java:12)
+2023-05-22 20:46:39,874 TRACE org.springframework.boot.diagnostics.FailureAnalyzers [main] FailureAnalyzer null failed
+java.lang.NullPointerException: null
+	at org.springframework.boot.diagnostics.FailureAnalyzers.analyze(FailureAnalyzers.java:126)
+	at org.springframework.boot.diagnostics.FailureAnalyzers.reportException(FailureAnalyzers.java:119)
+	at org.springframework.boot.SpringApplication.reportFailure(SpringApplication.java:811)
+	at org.springframework.boot.SpringApplication.handleRunFailure(SpringApplication.java:785)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:317)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1292)
+	at dev.likelion.jpa.JpaApplication.main(JpaApplication.java:12)
+2023-05-22 20:46:39,876 TRACE org.springframework.boot.diagnostics.FailureAnalyzers [main] FailureAnalyzer null failed
+java.lang.NullPointerException: null
+	at org.springframework.boot.diagnostics.FailureAnalyzers.analyze(FailureAnalyzers.java:126)
+	at org.springframework.boot.diagnostics.FailureAnalyzers.reportException(FailureAnalyzers.java:119)
+	at org.springframework.boot.SpringApplication.reportFailure(SpringApplication.java:811)
+	at org.springframework.boot.SpringApplication.handleRunFailure(SpringApplication.java:785)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:317)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1292)
+	at dev.likelion.jpa.JpaApplication.main(JpaApplication.java:12)
+2023-05-22 20:46:39,882 TRACE org.springframework.boot.diagnostics.FailureAnalyzers [main] FailureAnalyzer null failed
+java.lang.NullPointerException: null
+	at org.springframework.boot.diagnostics.FailureAnalyzers.analyze(FailureAnalyzers.java:126)
+	at org.springframework.boot.diagnostics.FailureAnalyzers.reportException(FailureAnalyzers.java:119)
+	at org.springframework.boot.SpringApplication.reportFailure(SpringApplication.java:811)
+	at org.springframework.boot.SpringApplication.handleRunFailure(SpringApplication.java:785)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:317)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1292)
+	at dev.likelion.jpa.JpaApplication.main(JpaApplication.java:12)
+2023-05-22 20:46:39,884 TRACE org.springframework.boot.diagnostics.FailureAnalyzers [main] FailureAnalyzer null failed
+java.lang.NullPointerException: null
+	at org.springframework.boot.diagnostics.FailureAnalyzers.analyze(FailureAnalyzers.java:126)
+	at org.springframework.boot.diagnostics.FailureAnalyzers.reportException(FailureAnalyzers.java:119)
+	at org.springframework.boot.SpringApplication.reportFailure(SpringApplication.java:811)
+	at org.springframework.boot.SpringApplication.handleRunFailure(SpringApplication.java:785)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:317)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1292)
+	at dev.likelion.jpa.JpaApplication.main(JpaApplication.java:12)
+2023-05-22 20:46:39,887 TRACE org.springframework.boot.diagnostics.FailureAnalyzers [main] FailureAnalyzer null failed
+java.lang.NullPointerException: null
+	at org.springframework.boot.diagnostics.FailureAnalyzers.analyze(FailureAnalyzers.java:126)
+	at org.springframework.boot.diagnostics.FailureAnalyzers.reportException(FailureAnalyzers.java:119)
+	at org.springframework.boot.SpringApplication.reportFailure(SpringApplication.java:811)
+	at org.springframework.boot.SpringApplication.handleRunFailure(SpringApplication.java:785)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:317)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1292)
+	at dev.likelion.jpa.JpaApplication.main(JpaApplication.java:12)
+2023-05-22 20:46:39,890 TRACE org.springframework.core.io.support.SpringFactoriesLoader [main] Loaded [org.springframework.boot.diagnostics.FailureAnalysisReporter] names: [org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter]
+2023-05-22 20:46:39,892 ERROR org.springframework.boot.SpringApplication [main] Application run failed
+java.lang.IllegalStateException: java.lang.IllegalStateException: Logback configuration error detected: 
+ERROR in ch.qos.logback.core.joran.spi.Interpreter@31:23 - no applicable action for [maxHistory], current ElementPath  is [[configuration][appender][rollingPolicy][timeBasedFileNamingAndTriggeringPolicy][maxHistory]]
+ERROR in ch.qos.logback.core.joran.spi.Interpreter@32:25 - no applicable action for [totalSizeCap], current ElementPath  is [[configuration][appender][rollingPolicy][timeBasedFileNamingAndTriggeringPolicy][totalSizeCap]]
+	at org.springframework.boot.context.logging.LoggingApplicationListener.initializeSystem(LoggingApplicationListener.java:344)
+	at org.springframework.boot.context.logging.LoggingApplicationListener.initialize(LoggingApplicationListener.java:298)
+	at org.springframework.boot.context.logging.LoggingApplicationListener.onApplicationEnvironmentPreparedEvent(LoggingApplicationListener.java:246)
+	at org.springframework.boot.context.logging.LoggingApplicationListener.onApplicationEvent(LoggingApplicationListener.java:223)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:176)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:169)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:143)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:131)
+	at org.springframework.boot.context.event.EventPublishingRunListener.environmentPrepared(EventPublishingRunListener.java:85)
+	at org.springframework.boot.SpringApplicationRunListeners.lambda$environmentPrepared$2(SpringApplicationRunListeners.java:66)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1541)
+	at org.springframework.boot.SpringApplicationRunListeners.doWithListeners(SpringApplicationRunListeners.java:120)
+	at org.springframework.boot.SpringApplicationRunListeners.doWithListeners(SpringApplicationRunListeners.java:114)
+	at org.springframework.boot.SpringApplicationRunListeners.environmentPrepared(SpringApplicationRunListeners.java:65)
+	at org.springframework.boot.SpringApplication.prepareEnvironment(SpringApplication.java:343)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:301)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1292)
+	at dev.likelion.jpa.JpaApplication.main(JpaApplication.java:12)
+Caused by: java.lang.IllegalStateException: Logback configuration error detected: 
+ERROR in ch.qos.logback.core.joran.spi.Interpreter@31:23 - no applicable action for [maxHistory], current ElementPath  is [[configuration][appender][rollingPolicy][timeBasedFileNamingAndTriggeringPolicy][maxHistory]]
+ERROR in ch.qos.logback.core.joran.spi.Interpreter@32:25 - no applicable action for [totalSizeCap], current ElementPath  is [[configuration][appender][rollingPolicy][timeBasedFileNamingAndTriggeringPolicy][totalSizeCap]]
+	at org.springframework.boot.logging.logback.LogbackLoggingSystem.loadConfiguration(LogbackLoggingSystem.java:179)
+	at org.springframework.boot.logging.AbstractLoggingSystem.initializeWithSpecificConfig(AbstractLoggingSystem.java:66)
+	at org.springframework.boot.logging.AbstractLoggingSystem.initialize(AbstractLoggingSystem.java:57)
+	at org.springframework.boot.logging.logback.LogbackLoggingSystem.initialize(LogbackLoggingSystem.java:132)
+	at org.springframework.boot.context.logging.LoggingApplicationListener.initializeSystem(LoggingApplicationListener.java:332)
+	... 18 common frames omitted

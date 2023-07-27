@@ -1,0 +1,54 @@
+자바 동작원리
+소스코드(.java) -> 컴파일러가 컴파일해서 -> 바이트 코드(.class)// 0101101011어쩌고 ->JVM
+
+JVM(Java Virtual Machine // java 프로그램이 실행되는 가상공간 운영체제와 상관없이 JVM이 구성되어 있다면 Java프로그램 실행가능)
+JRE(Java Runtime Environment // Java로 컴파일 된 프로그램을 실행 모든 Java 프로그램은 JVM에서 실행)
+JDK(Java Development Kit // Java 어플리케이션 개발을 위해 반드시 필요 Java 컴파일러와 JRE 포함)
+
+Git - 소수 이력 추적을 위한 버전 관리 시스템
+Github - git 프로젝트를 관리하는 저장소 제공
+
+git저장소에는 중요한 정보 저장 x
+
+.gitignore 명령어를 이용하여 보안상 민감 정보, 각종 설정  파일, 빌드 산출물, 개발용 데이터베이스를 제외.
+
+.git status 어떤 파일이 저장되어있고, 저장소(git area)에 어떤 파일들이 저장되어 있는지 확인하는 명령어
+
+git add.
+git add "<파일명>"  내 프로젝트 파일 중 버전관리에 반영한 버전을 찍어서 스냅샷으로 지정할 파일을 지정
+working directory ->(add)명령어 -> staging
+staging ->(rm/reset)명령어 -> working directory //원치않는 파일 되돌리기
+
+버전관리에 반영된 파일의 영역이 staging area
+
+git commit -m "<message>" 일종의 버전을 생성하는 과정 메세지를 입력안하면 에러 발생.
+
+working directory ->add(명령어)  --->staging ->commit(명령어)->local repositoy
+				 <-re/reset(명령어)
+
+로컬 저장소에 변동 기록을 남기기위해 commit 실행. 로컬저장소를 다른말로 버전이라고 할 수 있다
+
+message 를 남기는 이유 : commit에 대한 정보 기록
+
+git branch -M main 동일한 저장소내 소스에 대해 서로 영향을 받지않는 독립적인 공간.
+
+
+main/master -즉시 운영 배포할 수 있는 버전 - 사용자가 지금 이용중인 코드
+
+master -> main
+
+master slave -> primary replica
+
+blacklist whitelist -> blocklist allowlist
+
+git branch -M main 현재 바라보고 있는 branch의 이름을 main으로 변경
+
+main을 기본 브랜치명으로 사용
+
+staging - 상용에 반영하기 전 테스트 버전
+
+feature - 새로운 기능 추가 개발(병렬 작업) //굉장히 많을 수 있음.
+
+git add 후 .이면 이 폴더에 모든 파일을 예비저장소에 보낸다는 뜻. add 후 파일이름하면 그 파일 하나만 예비저장소에 보냄.
+
+
