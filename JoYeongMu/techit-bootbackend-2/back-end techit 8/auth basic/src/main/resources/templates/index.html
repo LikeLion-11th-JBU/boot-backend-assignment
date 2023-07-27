@@ -1,0 +1,32 @@
+<!doctype html>
+<html
+        lang="en"
+        xmlns:th ="http://www.thymeleaf.org"
+        xmlns:sec ="http://www.w3.org/1999/xhtml"
+>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Simple Admin Home</title>
+</head>
+<body>
+
+
+    <h3>Hello world~~~~</h3>
+    <form sec:authorize="isAnonymous()" method="get">
+        <input type="submit" th:action="@{/user/login}">
+    </form>
+
+    <h3 sec:authorize="isAuthenticated()">
+        반갑습니다. <span sec:authentication="name"></span>님
+    </h3>
+
+    <form th:action="@{/user/logout}" method="post">
+        <input type="submit" th:value="로그아웃">
+
+    </form>
+
+</body>
+</html>

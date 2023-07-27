@@ -1,0 +1,277 @@
+세상에 나오는 모든 상품은 출시되기 전에 테스트를 거치게 됩니다. 이는 Web Application을 비롯한 소프트웨어도 다를바 없습니다. 저희도 여태까지 개발해온 소스 코드를 Postman이라는 도구로 테스트를 해보았을 겁니다.
+
+개발자가 작성한 프로그램을 테스트 하는 방법에는 Postman을 이용한 방법도 있지만, 이는 완성된 결과물을 테스트 하는 용도로 사용됩니다. 한편 소스코드는 소위 말하는 객체 지향 프로그래밍을 비롯한 여러 이론으로 인해, 객체, 함수 단위로 작게 나눠지게 됩니다. 이런 작은 단위의 코드는 Postman같은 도구로는 테스트가 불가능 합니다. 그래서 소스 코드를 부분별로 테스트 할 수 있도록 하기 위한 다양한 Testing 라이브러리가 등장하였습니다. 이러한 것들을 저희 Spring Boot 프로젝트에 적용해 봅시다.
+
+## Testing 의존성
+
+테스트를 위한 라이브러리는 `spring-boot-starter-test` 에 준비가 되어 있습니다. 이는 Spring Initializr를 사용한다면 자동으로 추가되어 있습니다.
+
+```groovy
+testImplementation 'org.springframework.boot:spring-boot-starter-test'
+```
+
+다만 현재 `spring-boot-starter-test` 에는 JUnit5를 기본으로 사용하고 있습니다. 아직 많은 곳에서 JUnit4를 사용하고 있는 만큼, 저희도 우선 JUnit4 부터 시작하겠습니다.
+
+```groovy
+testImplementation 'org.springframework.boot:spring-boot-starter-test'
+testImplementation ('org.junit.vintage:junit-vintage-engine') {
+	exclude group: 'org.hamcrest', module: 'hamcrest-core'
+}
+```
+
+`junit-vintage-engine` 은 JUnit 4 버전을 사용하기 위한 의존ㅌ성입니다. 여기에 `hamcrest` 는 `spring-boot-starter-test` 에 중복으로 들어가있기 때문에 exclude 합니다. 이렇게 구성하면 Test를 위한 라이브러리는 
+
+- JUnit: 사실상의(de-facto) Java 어플리케이션 Testing 표준 라이브러리
+- Spring Test: Spring 어플리케이션 Test 지원 라이브러리
+- AssertJ: 가독성 높은 Test 작성을 위한 라이브러리
+- Hamcrest: Test 진행시 제약사항 설정을 위한 라이브러리
+- Mockito: Test용 Mock 라이브러리
+- JSONassert: JSON용 Assertion 라이브러리
+- JsonPath: JSON 데이터 확인용 라이브러리
+
+와 같이 구성되게 됩니다. 각각의 자세한 역할은 테스트 실습을 진행하면서 살펴봅시다.
+
+## PostController Unit Test
+
+Unit Test(단위 테스트)는 일반적으로 Test를 진행할 때 가장 작은 범위의 테스트입니다. 이때 작은 범위라는 것은, 개별 함수들이 잘 작동하는지를 테스트 하는 것이라고 보시면 됩니다. 
+
+간단하게 알아보기 위하여 `PostController` 의 `readPost()` 함수를 테스트 해 봅시다.
+
+```java
+@GetMapping("{id}")
+public PostDto readPost(
+        @PathVariable("id") int id
+){
+    return this.postService.readPost(id);
+}
+```
+
+### 테스트 클래스 만들기
+
+IDEA의 기능을 사용하면 간편하게 Test용 코드를 만들 수 있습니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1d69f641-fcfd-4167-9695-91bca196ade1/Untitled.png)
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/02898527-5ed3-47ca-8dba-e3ca45df3238/Untitled.png)
+
+에러가 났을때 해결을 위해 사용하는 `ALT + Enter` 단축키를, 테스트를 작성하기 위한 class 위에 사용하면 Create Test라는 옵션과 함깨, 아래의 창이 나오게 됩니다. 여기에서 `readPost()` 를 선택하면, 해당 함수를 테스트 하기 위한 Class가 `src/test/` 디렉토리 안에 생성됩니다.
+
+```java
+package dev.aquashdw.jpa;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class PostControllerTest {
+
+    @Test
+    void readPost() {
+    }
+}
+```
+
+여기에 몇가지 어노테이션을 추가하여 구성합시다.
+
+```java
+@RunWith(SpringRunner.class)
+@WebMvcTest(PostController.class)
+class PostControllerTest {
+```
+
+- `@RunWith` : 테스트를 실행할 클래스를 지정하는 용도입니다. 저희는 Spring Application을 테스트 하기 위해 `SpringRunner` 를 사용하게 됩니다.
+- `@WebMvcTest` : Spring의 테스트를 진행할 때, `Controller` 만 Unit Test를 진행할때 붙이는 Annoation입니다. 해당 Annotation이 붙으면 `@Controller, @ControllerAdvice, @JsonComponent` 등의 일부 Bean만 자동 생성이 됩니다. 나머지 `Service`, `Component` 등은 생성되지 않습니다. 테스트를 가볍게 진행하기 위하여 추가됩니다.
+
+여기에 PostController 같은 경우는, `PostService` 를 의존성으로 가지고 있으며, HTTP 요청을 보내기 위한 client가 있어야 합니다. 이를 코드로 추가합시다.
+
+```java
+@RunWith(SpringRunner.class)
+@WebMvcTest(PostController.class)
+class PostControllerTest {
+		@Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private PostService postService;
+```
+
+- `@MockMvc` : Spring의 `Controller` 테스트를 위한 클래스로서, MVC의 요청을 흉내(Mock)냅니다. `MockMvc` 의 `perform()` 을 사용하면, 요청을 `Controller`에 보낸듯한 결과를 만들 수 있습니다.
+- `@MockBean` : 실제 사용되는 Bean이 아닌 Mock을 추가합니다. `@Bean` 을 Spring IoC에 Bean 객체를 추가하기 위해 사용하듯이, `@MockBean` 을 사용하여 추가하거나, 멤버 변수(field)에 붙여서 사용합니다.
+
+Testing을 진행할때 Mock이라는 용어를 자주 들을 수 있습니다. 여기서 Mock은 흉내낸다는 뜻을 가지고 있고, 실제로 동작도 마치 그 대상을 흉내내는 것처럼 작동합니다. 지금 테스트 하고자 하는 대상인 PostController는 `PostService` 를 필요로 하지만, `PostService` 는 PostController와는 별개의 모듈임으로 별도로 테스트 되는 것이 합리적입니다. 따라서 `PostService` 의 동작을 흉내내는 객체를 멤버 변수로 설정하는 것입니다. 실제 테스트 코드를 작성하면서, `PostService` 가 어떤 인자를 받을 때 어떤 반환을 할지 같은 부분을 설정하며 진행하게 됩니다.
+
+마지막으로 실제로 실행될 테스트 코드를 함수 형식으로 작성합시다.
+
+```java
+@RunWith(SpringRunner.class)
+@WebMvcTest(PostController.class)
+class PostControllerTest {
+		@Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private PostService postService;
+
+		@Test
+    void readPost() throws Exception {
+				// 테스트 코드 작성할 곳
+    }
+}
+```
+
+### given - when - then
+
+테스트 코드를 작성하는데 있어서 많이 사용되는 패턴이 있는데, 그것을 `given - when - then` 의 구조를 가진 테스트를 작성하게 된다는 겁니다. 즉 어떤 테스트를 하게 되면, 
+
+1. given: 어떠한 데이터가 준비가 되어있을때
+2. when: 어떤 행위 (함수 호출 등)이 일어나면
+3. then: 어떤 결과가 나올것이다.
+
+라는 틀을 가지고 작성을 하는 것입니다. 이를 저희 `PostController` 의 `readPost()` 에 대입해 생각해보면,
+
+1. given: 어떤 PostEntity 가 존재할때,
+2. when: `/post/{id}` 에 GET 요청이 들어오게 되면
+3. then: 해당 `PostEntity` 를 표현한 데이터가 돌아올 것이다.
+
+를 생각하고 작성해 봅시다.
+
+- PostController#readPost
+    
+    ```java
+    @Test
+    void readPost() throws Exception {
+    		// given
+        PostDto testDto = new PostDto();
+        testDto.setId(10);
+        testDto.setTitle("Unit Title");
+        testDto.setContent("Unit Content");
+        testDto.setWriter("unit");
+    
+        given(postService.readPost(10))
+                .willReturn(testDto);
+    
+    		// when
+        final ResultActions actions = mockMvc.perform(get("/post/10"))
+                .andDo(print());
+    
+    		// then
+        actions.andExpectAll(
+                status().isOk(),
+                content().contentType(MediaType.APPLICATION_JSON),
+                jsonPath("$.title", is("Unit Title")),
+                jsonPath("$.content", is("Unit Content")),
+                jsonPath("$.writer", is("unit"))
+        );
+    }
+    ```
+    
+
+`given()` 함수를 가지고 `MockBean` 인 `postService` 의 결과를 미리 정해 둡니다. 지금은 `id` 가 10인 DTO를 만들어 두고, `postService.readPost(10)` 의 함수가 호출이 될때, 해당 DTO가 돌아오는 결과를 `willReturn()` 으로 미리 정의하고 있습니다. 
+
+그 다음 단계는 `mockMvc.perform()` 함수를 사용하면 HTTP 요청을 보내는 것처럼 동작하게 할 수 있습니다. `get("/post/10")` 를 전달함으로서, `/post/10` 경로에 GET 요청을 보낸것처럼 행동하게 작성한 것입니다. 이후 `.andDo(print())` 에서 결과를 출력합니다. `perform` 의 결과는 `ResultActions` 로 반환되어, 변수에 할당합니다.
+
+마지막으로 `actions` 에 기대하는 다양한 조건을 제시합니다.
+
+- `status().isOk()` : Status가 OK 인지
+- `content().contentType(MediaType.APPLICATION_JSON)` : 응답의 형태가 JSON인지
+- `jsonPath()` : 결과 JSON의 각 Key에 따른 Value를 JsonPath라는 표현식을 이용하여 검사합니다.
+
+이제 해당 코드를 실행하면 `PostController#readPost()` 함수의 테스트를 진행합니다.
+
+## PostController Integration Test
+
+Post 기능 같은 경우, 현재 Service, Repository가 다 구현된 상태임으로, Integration Test도 진행해 봅시다. Integration Test는 기본적인 클래스들의 상호작용을 테스트 하는 단계로서, 지금처럼 Controller - Service - Repository 클래스들이 함깨 잘 작동하는지를 확인하는 테스트입니다.
+
+`src/test/.../` 패키지에 `PostControllerIntegrationTest` 클래스를 만들고, 아래와 같이 Annotation을 붙여줍시다.
+
+```java
+@RunWith(SpringRunner.class)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        classes = JpaApplication.class)
+@AutoConfigureMockMvc
+@EnableAutoConfiguration(exclude= SecurityAutoConfiguration.class)
+@AutoConfigureTestDatabase
+class PostControllerIntegrationTest {
+```
+
+이 설정으로 하게 되면 저희가 작성한 Bean들이 생성됩니다.
+
+```java
+class PostControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private PostRepository postRepository;
+```
+
+Unit Test와 마찬가지로 MockMvc와, Test 하기 전 Entity 등록을 위해 `postRepository` 또한 추가하였습니다.
+
+```java
+		@Before
+    public void setEntities(){
+        createTestPost("First Post", "First Post Content", "test_writer");
+        createTestPost("Second Post", "Second Post Content", "test_writer");
+        createTestPost("Third Post", "Third Post Content", "test_writer");
+    }
+		...
+		@After
+    public void resetDb(){
+        postRepository.deleteAll();
+    }
+		...
+		private Long createTestPost(String title, String content, String writer){
+        PostEntity postEntity = new PostEntity();
+        postEntity.setTitle(title);
+        postEntity.setContent(content);
+        postEntity.setWriter(writer);
+        return postRepository.save(postEntity).getId();
+    }
+}
+```
+
+마지막으로 Test 여러군데서 사용하게 될 테스트 대상이 될 Entity를 만들고 그 ID를 반환하기 위한 함수 하나를 추가하고, 그 함수를 이용해 몇개의 Entity를 미리 생성해 놓습니다. 테스트가 끝난 뒤 DB를 정리하기 위한 함수도 추가해둡니다.
+
+- `@Before` : 이 annotation이 붙은 함수는 테스트가 실행되기 전에 실행됩니다.
+- `@After` : 이 annotation이 붙은 함수는 테스트가 끝난 뒤 실행됩니다.
+
+이제 실제 `/post/{id}` 를 테스트 해 봅시다.
+
+```java
+		@Test
+    void givenValidId_whenReadPost_then200() throws Exception {
+        // given
+        Long id = createTestPost("Read Post", "Created on readPost()", "read_test");
+
+        // when
+        final ResultActions actions = mockMvc.perform(get("/post/{id}", id))
+                .andDo(print());
+
+        // then
+        actions
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.title", is("Read Post")))
+                .andExpect(jsonPath("$.content", is("Created on readPost()")))
+                .andExpect(jsonPath("$.writer", is("read_test")));
+    }
+```
+
+함수의 이름을 보면 이름부터 given - when - then 패턴을 따르고 있음을 확인할 수 있습니다. 테스트 코드를 위한 함수의 이름은 작성하기 위한 특별한 정답이 있는 편은 아니지만, 지금처럼 부분별로 `_` 을 이용해 연결하고, 각 부분을 CamelCase로 작성하는 관습이 많이 보이는 편입니다.
+
+그 외의 코드의 내용은 Unit Test와 대부분 유사합니다. 다만 Unit Test는 `PostController` 클래스 하나만 테스트 하였다면, 이 테스트의 실행은 `PostController - PostService - PostRepository` 의 과정을 전부 테스트 했다고 볼 수 있습니다.
+
+## Test Driven Development
+
+TDD이란 기본적으로 실제 코드의 개발이 진행되기 전에 테스트를 작성하는 것입니다. 어떤 특정한 요구사항에 맞춰, 해당 요구사항을 만족할 때 통과할 수 있는 테스트를 먼저 작성하고, 그 테스트를 통과할 소스 코드를 후에 작성하는 것을 목표로 합니다.
+
+1. 테스트 작성: 만드는 서비스의 Use Case에 맞는 테스트를 작성합니다. 이렇게 하면 코드를 작성하기 이전에 요구사항에 대하여 집중할 수 있게 됩니다.
+2. 테스트 실행 및 실패: 기본적으로 코드를 작성하지 않았음으로 테스트는 실패하게 됩니다.
+3. 테스트를 통과하는 가장 간단한 코드의 작성: 하드코딩을 하든 뭘하든 일단 테스트를 통과하게 만듭니다.
+4. 테스트 통과 확인: 이 단계에 도달하면 테스트를 통과해야 합니다. 그렇지 않다면 작성된 소스 코드를 고쳐서 테스트를 통과하게 만들어야 합니다. 테스트는 건드리지 않기 때문에 요구사항에 벗어나지 않도록 유지할 수 있습니다.
+5. 리펙토링: 테스트를 통과하였으면 이제 코드를 정리합니다. 중복 코드 제거, 함수를 작은 단위로 나눈다는 등, Spring 이라면 Controller에 복잡하게 구현된 코드를 Service 등으로 나누는 것 또한 진행할 수 있습니다.
+6. 이후 위의 과정을 기능 추가의 순간마다 반복하게 됩니다.
+
+이런 방식으로 개발을 진행하게 될 경우 기본적으로 Unit Test를 다 통과할 수 있도록 만들어야 하기 때문에 보다 객체지향적인 개발이 가능하며, 설계와 디버깅의 시간을 단축시키게 됩니다. 궁극적으로는 생산성 또한 증대하게 되지만, 기본적으로 Test Code의 작성이 늘어나며 유지보수 해야할 코드량 전체가 늘어나게 됩니다.

@@ -1,0 +1,55 @@
+PostDto의 인스턴스 변수들 중에 title, content, writer, boardId 같은 경우에 title 즉 제목은 비어있지 않아야하고, content 인 본문은 400자 이하, writer인 작성자는 3자 이상 10자 이하인 제약사항이 존재할 수 있다. 하지만 사용자의 입력이 어떻게 들어올지는 예측하기 어렵다. (이때 사용자가 엔드 유저 뿐만 아니라 프론트앤드 개발자들도 사용자가 될 수 있다.) -> 사용자의 입력을 검증하는 부분은 굉장히 중요하다. 
+코드 상에서 이런 변수들에 대한 제약사항을 일일이 확인하는 것은 매우 힘들다. -> 이런 식으로 사용자의 입력을 검증을 하는 부분이 validation이라는 topic으로 올라오게 된다. SpringBoot 프레임 워크에서는 Java Bean Validation라는 객체 상의 제약사항의 명세를 제공하기 위한 프로젝트를 validation으로 사용한다. -> bean Validation 자체로는 그 기능을 하지않는다. 이것은 기본적으로 명세를 제공하기 위한 것이기 때문이다. Bean Validation project라는 부분은 기본적으로 사용자의 입력을 검증하기 위해서 변수에다가 어노테이션을 선언 해주는 경우도 있지만, 여러가지 제약사항들을 직접 정의를 하고 어디에다 붙일지, 어떻게 처리를 할지같은 부분도 직접 구현을 할 수 있겠끔, 만들어진 부분도 있다. -> 하지만 지금은 미리 만들어진 어노테이션을 활용을 하는 방법을 배울 것이다. 
+-> 그 중에서 가장 중요한 Null Point Exception 여부에 대한 어노테이션은 null, notnull이다. 또한 String 또는 Collection의 크기를 검증하기 위한 Size 어노테이션, String 또는 Collection의 Size가 0이상인지 여부에 대한 NotEmpty 어노테이션과 String이 공백을 제외한 문자열인지 여부에 대한 NotBlank 어노테이션에 대해서 배울 것이다. 
+
+1. Validation을 사용하기 위해서 build.gradle에서 implementation을 추가해준다.
+implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+1-1. PostDto에서 title은 비어있으면 안되므로 NotNull이라는 어노테이션을 붙여준다. content는 400자를 넘으면 안되는 제약사항이 있었으므로 @Size(max=400)이라는 어노테이션을 붙여준다. 마지막으로 writer는 3자 이상 10이하인 제약사항이 있었으므로 @Size(min=3, max=10) 어노테이션을 붙여준다. RequestBody에 들어갈 멤버변수 상에다가 어노테이션을 붙여주기만 하면 된다. (만약 title이 null이였으면 좋겠으면 null이라는 어노테이션을 붙여주면 된다.) 
+
+1-2. 그런데 이렇게 어노테이션을 붙여준다고 바로 작동하는 것이 아니라(지금은 PostDto의 변수에 붙은 것뿐이다), 이 PostDto를 실제로 사용하는 부분에서 해당 어노테이션들이 정상적으로 만족하는 상태인지를 검증을 하는 부분이 필요하다. 즉, 이 어노테이션들에 대해 정상적으로 만족하는 상태인지에 대해서 검증을 해줘야한다. PostDto를 사용하는 곳은 PostController에서 createPost이므로 createPost파라미터의 @RequestBody 앞에 @Valid라는 어노테이션을 붙여준다.
+-> public void createPost(@Valid @RequestBody PostDto dto){
+        this.postService.createPost(dto);
+    }
+-> 이 다음에 실행해보면 Validation failed for argument [0]라는 문구가 나오면 첫번째 인자의 validation이 실패하였다는 뜻이고, 즉 PostDto의 Validation이 실패했다는 뜻이다. -> title또는 content와 writer에 대한 validation에 대해서 맞지 않는 내용이 왔을 때 나오는 문구이다.
+
+1-3. 만약에 예외(Exception)이 발생할 수 있는데, 이때 예외에 들어갈 메시지를 정의해 줄 수 있다.
+    @NotNull(message = "title not null")
+    private String title;
+    @Size(max=400, message = "size under 40")
+    private String content;
+    @Size(min=3, max=10, message = "size between 3 -10")
+    private String writer;
+-> 이렇게 메시지를 추가를 하면 나중에 그 오류 메시지를 다시 사용자에게 전달한다던지 하는 상황에서 사용을 할 수 있다. 그래서 메시지를 볼 수 있는 형태로 작성을 해줘야한다. message 부분이 작성이 되지 않는다면 default message가 자동으로 생성된다. 지금은 문자열(String)을 기준으로 Size라는 어노테이션을 붙여줬지만, 추가로 Collection(List, set, map의 Size를 알 수 있는 검증 -> 몇개가 될 수 있느냐 없느냐에 대한 검증을 할 수 있다.)을 기준으로 Size 어노테이션을 붙여줄 수도 있다. 
+
+2. NotNull, NotBlank, NotEmpty에 대한 차이를 보기 위해서 ValidTestDto라는 새로운 class를 생성한다. 
+
+2-1. 클래스 안에 NotBlank, NotEmpty, NotNull 에 대한 멤버변수를 만든다음 빈생성자, 생성자, getter와 setter를 만들어 준다.
+    private String notNullString;
+    private String notEmptyString;
+    private String notBlankString;
+
+    private List<String> notEmptyStringList; -> 추가로 Collection에 대한 size를 확인해보기 위해서
+
+2-2. 해당 멤버변수에 맞는 어노테이션들을 붙여준다.
+    @NotNull            
+    private String notNullString;
+    @NotEmpty
+    private String notEmptyString;
+    @NotBlank
+    private String notBlankString;
+    @NotEmpty
+    private List<String> notEmptyStringList;
+
+    @Notnull은 변수가 null인지 아닌지 구분을 해주는 어노테이션이다. 즉, notNullString이 null이기만 하면 검증이 실패한다. -> notNullString이 null이 아니여야한다. 
+    @NotEmpty는 notEmptyString 변수안에 "" 이런식으로 내용물이 없는 String일 때 검증에 실패한다. -> 이렇게 되면 null은 아닌데 내용물이 없기때문에(문자열로서 객체가 생성되었지만 그 안에 담겨 있는 캐릭터는 존재하지 않는다.) 검증에 실패한다.
+    즉, @NotEmpty는 기술적으로는 NotNull을 먼저 검증하고 객체(Object)의 크기(size)가 0보다 큰지를 확인한다. (notEmptyStringList 역시 똑같이 작동을 한다.)
+    @NotBlank는 공백이 아닌 문자열 ""사이에 공백이 존재하더라도 검증에 실패한다. NotEmpty는 ""안에 공백이 존재해도 검증이 가능하다(왜냐하면 NotEmpty는 문자열의 size자체만 보기 때문이다). -> 공백이 아닌 문자열을 검증을 하기 위해서는 무조건 NotBlank라는 어노테이션을 사용한다.
+
+3. ValidTestDto를 test하기 위해서 PostController에 @PostMapping을 하나 만든다.
+    @PostMapping("test-valid")
+    public void testValid(@Valid @RequestBody ValidTestDto dto){
+        logger.warn(dto.toString());
+    }
+
+4. 만약 내부의 멤버변수로서 다른 클래스를 사용할 수도 있다. 그럴 때는 그 class도 추가로 앞에 valid 어노테이션을 붙여줌으로서 그 객체에 대한 검증또한 진행할 수 있다. 예를 들어 PostController 클래스 안에 private ValidTestDto dto; 라는 ValidTestDto 클래스를 멤버변수로 선언할 때, 위 에 valid라는 어노테이션을 붙여줌으로서 ValidTestDto라는 객체에 대한 검증또한 진행할 수 있다.

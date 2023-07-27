@@ -1,0 +1,252 @@
+OAuth2 서버를 만들고자 한다면, 앞서 설명했던 플로우에 필요한 엔드포인트를 다 지원하는 두개의 서버를 만들면 됩니다. 앞서 네이버 아이디로 로그인을 구현하면서 OAuth2 Client를 구성했을때, Provider를 구성했던 내용을 살펴봅시다.
+
+```yaml
+authorization-uri: https://nid.naver.com/oauth2.0/authorize
+token-uri: https://nid.naver.com/oauth2.0/token
+user-info-uri: https://openapi.naver.com/v1/nid/me
+```
+
+이중 `authorization-uri` 와 `token-uri` 의 경우, 인증을 담당하는, Auth Server에서 구현되어야 하는 내용이며, 구체적으로는 일반적인 로그인을 위한 endpoint, Access Token 발급 (및 기타) 기능을 위한 endpoint가 있어야 합니다.
+
+`user-info-uri` 의 경우, `auth-server` 에서 발급된 access token을 받아, 요청자에게 사용자 정보를 제공하는 기능이 필요합니다. 이때 Access Token으로는 앞서 설명한 JWT 등을 사용하는 경우가 많으며, Access Token의 유효기간, 발행 대상, 인가받은 정보 범위 등이 작성되어 있습니다. 이를 기반으로 요청이 타당한지를 판단하여 사용자의 정보를 제공하는 기능을 합니다.
+
+본래 Spring Security 안에는 OAuth 프로젝트가 존재했습니다. 여기에 `@EnableWebSecurity` 를 진행하듯이, 어노테이션 기반으로 인증 서버 기능을 제공하는 방법이 본래 존재했습니다. 하지만 OAuth2.1의 등장과 함께 `@Deprecated` 되었으며, Spring Authorization Server 프로젝트가 새로 시작되었습니다.
+
+[https://github.com/spring-projects/spring-authorization-server](https://github.com/spring-projects/spring-authorization-server)
+
+다만 현재 (2022.03.16) 릴리스 버전이 0.2.2인 만큼, 상용 단계의 프로젝트로서 활용하기에는 아직 무리가 있는 것이 사실입니다. 여기서는 가장 간단한 형태로 만들어진, Authorization 서버 + Resource 서버, 그리고 두 서버를 이용해 사용자 정보를 불러오는 Client 서버를 구성해 보겠습니다.
+
+## Auth 서버
+
+Auth 서버의 경우 아직 Major 버전이 나오지 않았으며, 정식으로 지원하는 라이브러리가 아닌 만큼 Spring Boot의 다른 라이브러리랑 다르게 버전관리가 자동으로 이뤄지지 않습니다. 저희 build.gradle 파일을 확인하면 상단에
+
+```groovy
+plugins {
+	id 'org.springframework.boot' version '2.5.10'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+}
+```
+
+에 존재하는 `io.spring.dependency-management` 부분이 저희가 사용하고자 하는 하위 라이브러리(아티팩트)들의 버전을 정해줍니다. (예: `spring-boot-starter-web` ) 하지만 auth-server 같은 경우 아직 지원이 안되기 때문에 별도로 버전을 정의를 해줘야 합니다.
+
+```groovy
+implementation 'org.springframework.security:spring-security-oauth2-authorization-server:0.2.2'
+```
+
+이후의 Resource와 Client의 경우 아직 OAuth2 라이브러리를 활용하기 때문에 신경쓰실 필요 없습니다.
+
+### 필요한 기존 작업
+
+앞서 로그인을 구현하기 위해 필요했던 `@EnableWebSecurity` 부분이 필요합니다. 다만 Authorization 서버에서 요구하는 설정 방식을 위해, `WebSecurityConfigurerAdapter`를 상속받지 않고, `SecurityFilterChain` 를 Bean의 형태로 정의를 하여, Spring Boot에서 가져다 사용하도록 만들어야 합니다. Spring Application 내부에서 제공하는 추상화된 `configure` 함수와 `Filter` 객체를 제공하는 방식이 서로 순서가 충돌하게 되어 양립할 수 없기 때문입니다.
+
+```java
+@Bean
+SecurityFilterChain defaultSecurityFilterChain(
+        @Autowired AuthenticationProvider authenticationProvider,
+        HttpSecurity http
+) throws Exception {
+    http
+            .authorizeRequests(authorizeRequests -> {
+                authorizeRequests.antMatchers("/user/sign-up").permitAll();
+                authorizeRequests.anyRequest().authenticated();
+            })
+            .formLogin(formLogin -> {
+                formLogin.loginPage("/user/login");
+                formLogin.permitAll();
+            })
+            .logout(logout -> {
+                logout.logoutUrl("/logout");
+                logout.logoutSuccessUrl("/user/login");
+            })
+            .csrf().disable()
+            .authenticationProvider(authenticationProvider)
+    ;
+    return http.build();
+}
+
+@Bean
+public AuthenticationProvider authenticationProvider(
+        @Autowired UserDetailsService userDetailsService,
+        @Autowired PasswordEncoder passwordEncoder
+){
+    DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+    provider.setUserDetailsService(userDetailsService);
+    provider.setPasswordEncoder(passwordEncoder);
+    return provider;
+}
+```
+
+로그인한 사용자를 다루기 위한 `UserDetailsService` 또한 만들어줘야 합니다.
+
+```java
+@Primary
+@Service
+public class UserService implements UserDetailsService {
+		private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private final PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+
+    public UserService(
+            @Autowired
+            PasswordEncoder passwordEncoder,
+            @Autowired
+            UserRepository userRepository
+    ) {
+        this.passwordEncoder = passwordEncoder;
+        this.userRepository = userRepository;
+				// 테스트용 사용자 셋
+        userRepository.save(new UserEntity("user1", passwordEncoder.encode("pass1")));
+        userRepository.save(new UserEntity("user2", passwordEncoder.encode("pass2")));
+        userRepository.save(new UserEntity("user3", passwordEncoder.encode("pass3")));
+
+    }
+
+    public Long signUp(String username, String password) {
+        // omitted
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username)
+            throws UsernameNotFoundException {
+				// omitted
+    }
+}
+```
+
+여기서 사용하는 `PasswordEncoder` 형 Bean의 경우 별도의 `@Configuration` 에 정의하였습니다.
+
+```java
+@Configuration
+public class EncoderConfig {
+    @Bean
+    public PasswordEncoder passwordEncoder(){
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+}
+```
+
+그 외 `UserRepository`, `UserEntity`, `UserController` 등과 HTML은 생략도록 하겠습니다.
+
+### AuthServerConfig
+
+인증 서버를 구성하기 위한 내용은 별개의 Configuration으로 작성하였습니다.
+
+```java
+@Bean
+public RegisteredClientRepository registeredClientRepository(
+        @Autowired
+        RegisteredClientRepository registeredClientRepository
+) {
+    return registeredClientRepository;
+}
+
+@Bean
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public SecurityFilterChain authServerSecurityFilterChain(HttpSecurity http) throws Exception {
+    OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+
+    return http.formLogin(formLogin -> formLogin.loginPage("/user/login")).build();
+}
+
+...
+
+@Bean
+public ProviderSettings providerSettings() {
+    return ProviderSettings.builder()
+            .issuer("http://localhost:10000")
+            .build();
+}
+```
+
+몇가지 내용만 살펴보면,
+
+1. Spring Authorization Server 내부적으로 사용하는 `RegisteredClientRepository` Bean 객체를  만들어서 제공하고 있습니다. 이 Bean은 OAuth2 입장에서 사용하는 Client 서비스를 다루기 위한 객체입니다. `UserDetailsService` 처럼 저희가 정의합니다.
+2. SecurityFilterChain을 전달하는 Bean에 `applyDefaultSecurity(http)` 함수를 사용하고 있습니다. 이 함수를 사용하면 전달된 `HttpSecurity` 인자에 인증서버로 필요한 기초 endpoint 들의 접근 제한이 풀립니다. (`authorization-uri` , `token-uri` 등)
+3. `ProviderSettings` Bean을 제공하고 있습니다. 이는 OAuth2 Provider에 대한 설정을 전달하기 위한 내용으로, 현재는 발급자만 설정하고 있습니다.
+    - 중요
+        
+        쿠키는 포트 번호를 무시한 도메인을 기준으로 관리됩니다. 그래서 제공될 `ProviderSettings` 에 발급자를 `[localhost](http://localhost)` 로 작성하고, 후에 만들 Client 서비스는 `127.0.0.1` 로 접속을 해야 문제 없이 진행할 수 있습니다.
+        
+
+등을 정의해 주고 있습니다.
+
+### RegisteredClientRepository
+
+일반적인 서비스에 로그인이 있다면, 로그인 할 수 있는 사용자를 다루기 위한 객체로 `UserDetailsService` 를 구현하였습니다. OAuth 제공자 서비스라면, OAuth를 이용해 사용자 정보를 받고자 하는 Client 서비스가 복수개 존재할 것입니다. 이 Client를 다루기 위한 객체 (인터페이스)가 이 `RegisteredClientRepository` 입니다. OAuth를 위한 `UserDetailsService`인 샘입니다.
+
+```java
+public interface RegisteredClientRepository {
+
+	void save(RegisteredClient registeredClient);
+
+	@Nullable
+	RegisteredClient findById(String id);
+
+	@Nullable
+	RegisteredClient findByClientId(String clientId);
+
+}
+```
+
+위의 세가지 함수를 구현하여야 합니다. 새로운 OAuth 클라이언트 생성을 위한 `save()` , Unique한 구분자 id 또는 사용자가 정의하는 ClientId를 기준으로 등록된 `RegisteredClient` 를 반환하는 함수 둘입니다. 내용은 JPA를 활용하여 구현하였습니다.
+
+```java
+@Override
+public void save(RegisteredClient registeredClient) {
+    OAuthClientEntity newClient = new OAuthClientEntity();
+    newClient.setUid(registeredClient.getId());
+    newClient.setClientId(registeredClient.getClientId());
+    List<RedirectEntity> redirectEntities = new ArrayList<>();
+    for (String redirectUri: registeredClient.getRedirectUris()){
+        RedirectEntity redirectEntity = new RedirectEntity();
+        redirectEntity.setRedirectUri(redirectUri);
+        redirectEntities.add(redirectRepository.save(redirectEntity));
+    }
+
+    newClient.setRedirectUris(redirectEntities);
+    clientRepository.save(newClient);
+}
+
+@Override
+public RegisteredClient findById(String id) {
+    return this.entityToClientInterface(clientRepository.findFirstByUid(id));
+}
+
+@Override
+public RegisteredClient findByClientId(String clientId) {
+    return this.entityToClientInterface(clientRepository.findFirstByClientId(clientId));
+}
+```
+
+또한 실행시 테스트용 Client를 위해 생성자에서 해당 내용을 추가하였습니다.
+
+```java
+public RegisteredClientService(
+        @Autowired
+        ClientRepository clientRepository,
+        @Autowired
+        RedirectRepository redirectRepository
+) {
+    this.clientRepository = clientRepository;
+    this.redirectRepository = redirectRepository;
+
+    OAuthClientEntity newClient = new OAuthClientEntity();
+    newClient.setUid(UUID.randomUUID().toString());
+    newClient.setClientId("likelion-client");
+    newClient.setClientSecret("{noop}secret");
+    newClient = this.clientRepository.save(newClient);
+
+    RedirectEntity redirectEntity1 = new RedirectEntity(
+            newClient,
+            "http://127.0.0.1:9080/login/oauth2/code/likelion-oidc"
+    );
+    this.redirectRepository.save(redirectEntity1);
+
+    RedirectEntity redirectEntity2 = new RedirectEntity(
+            newClient,
+            "http://127.0.0.1:9080/authorized"
+    );
+    this.redirectRepository.save(redirectEntity2);
+}
+```

@@ -1,0 +1,54 @@
+지금까지의 작업은 기능을 제공하는데 집중을 했다. 
+
+상용 서비스 준비 -> 컴퓨터 메모리 사용량 이나 컴퓨터 디스크 공간이 얼마나 남았는지에 대한 것들을 알아야되는 순간들이 있다. 
+즉, 상용 서비스 준비는 서비스가 안정적으로 돌아가는데 필요한 기능(Spring Boot Actuator)
+
+어떤 프로젝트에다가 Actuator를 추가해서 어떤식으로 작동하는지 확인해보자
+
+1. build.gradle에 
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+  를 추가한다. 
+  
+  그리고 작동을 하면 Exposing 1 endpoint beneath base path '/actuator'이라는 문구가 나오는데, 이것은 build.gradle에 actuator를 추가함으로서 작동을 하기 시작하는데, 서버를 띄우게 되면 기본적으로 http://localhost:8080에 서버가 생성이 된다. 여기에서 actuator라는 기본 path 밑에 endpoint하나를 열어놓았다라는 의미이다. 즉, RequestMapping에서 무언가를 설정하지 않아도 http://localhost:8080/actuator 라는 경로가 생겼다라는 의미를 가지고 있다. 그래서 actuator에서 말을 한 경로로 요청을 보내게 되면 그 다음에 사용할 수 있는 link들이 나오게 된다. 그 중 health check는 어떤 서비스가 현재 사용자의 요청을 받을 수 있는 준비가 되어있는 상태인지에 대해서 주기적으로 확인을 하는 작업을 healthcheck라고 한다. actuator를 추가함으로서 healthcheck를 위한 엔드포인트가 자동으로 구성이 된것을 볼 수 있다. 이런 식으로 actuator에서 application의 상태를 알 수 있겠끔 도와주는 기능들을 많이 제공을한다. 
+
+  2. actuator는 yml 파일에서 설정한다.
+  management:
+  endpoints:
+    enabled-by-default: true    -> enable은 actuator가 가지고 있는 Bean을 실제로 사용을 할지말지에 대한걸 결정을 한다. false라고 하면 health의 enabled와 info의 enabled loggers의 enabled를 각각 true와 false 둘중 하나로 설정해줘야한다. 
+    web:
+      exposure:   
+        include: health,info,loggers    -> enabled이 true라고 하더라도 include에 포함이 되어있지 않은 기능들은 엔드포인트가 형성되지 않는다. -> 즉 enabled라면 어플리케이션에서는 돌아가지만 include되지 않아서 그것에 대한 정보를 받아오지 못하는 상태로 작동하게 된다. 
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+ -> health의 show-details와 show-components값을 always로 해두는 것은 health의 기능에 대한 설정을 작성하기 위한 용도이다. 
+       info:
+        enabled: true
+      loggers:
+        enabled: true
+      shutdown:
+        enabled: true
+      prometheus:
+        enabled: true
+이렇게 actuator를 yml 파일에 설정을 하면 Exposing 3 endpoint beneath base path '/actuator'라는 문구를 볼 수 있다. 그 다음 postman 을 확인해 보면 health, info, loggers를 위한 엔드포인트가 활성화된 것을 볼 수 있다. 또한 health에 show-details와 show-components값을 넣으면 components의 값이 나오기 시작한다. -> health/db라는 엔드포인트를 사용한다. 이때 어떤 데이터베이스를 사용하고 있는지, 또한 어떤 validationQuery로 무엇을 사용하고 있는지 같은 부분을 확인할 수 있다. 
+
+또한 logger name에 대한 경로는 actuator/loggers/dev.aquashdw.jpa.interceptor(logger가 선언된 패키지명)으로 설정되어 있다. json의 형식은 configuredLevel 과 effectiveLevel이 존재한다. effectiveLevel 같은 경우는 우리가 설정을 해놓은 logLevel이다. actuator를 사용하면 실행중인 logger의 Level을 바꿀 수 있다. 또한 shutdown은 실제로 서비스를 종료하는요청을보낼 때 사용한다.
+prometheus는 세계적으로 많이 사용하는 모니터링 도구이다. prometheus는 다양한 계측 정보를 Http 요청을 통해서 받아오고(가지고 온 계측 정보를 정리를 하는 역할을 한다.), 계측 정보에 대한 내용을 GUI로 표시한다. 또한 위험 사황에 대한 알람을 보여준다. 이때 Http요청을 통해서 받아온다는 부분이 Actuator와 연관이 생기는 곳이다. 즉, 이 Http 요청을 받아줄 수 있는 엔드포인트를 Actuator에서 제공을 하고 있다. 
+
+3. 최상위 디렉토리인 jpa에 prometheus.yml 파일을 하나 만든다.
+global: 
+  scrape_interval:      15s
+  evaluation_interval:  15s
+  
+-> 몇초 간격으로 정보를 가져오고, 측정할 것인지에 대한 내용이다. 
+
+scrape_configs: 
+  - job_name: 'spring boot scrape'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 1s
+    static_configs: 
+      - targets: ['host.docker.internal:8080']  -> 추가로 docker 버전에 따라서 이 부분이 조금씩 달라질 수 있다. springBoot인데 prometheus는 docker로 띄울 생각이다. 이때 SpringBoot는 docker로 안띄우고 내 로컬 컴퓨터에 띄울 것이기 때문에 docker의 내부에서 8080으로 요청을 하면 host기계로 요청이 전달이 되게 된다. 
+
+-> 그 외에 SpringBoot의 상대에 대해서 어떻게 할 것인지에 대한것

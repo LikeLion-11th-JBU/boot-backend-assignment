@@ -1,0 +1,63 @@
+일반적인 웹 서비스의 배포구조
+
+사용자 브라우저 <=⇒ 물리적 컴퓨터
+
+연결되는 부분은 컴퓨터 통신 영역
+
+⇒ (들어온 신호) 물리적컴퓨터
+
+웹서버 APACHE, NGiNX
+
+ip 2^16 -1까지의 범위 가능 이것을 포트 번호
+
+포트
+
+포트 번호를 보고 웹서버에 들어옴
+
+그럼 파일을 돌려서 보내줌 이것이 파일시스템을 말함 또는 웹 애플리케이션 서버 프로그램으로 다시 전달.
+
+웹서버랑 웹애플리케이션은 다름.
+
+웹애플리케이션
+
+Java Web Application WAR 파일
+
+Spring boot
+
+Hardware > Web Server > spring boot OR Filesystem
+
+Hardware > spring boot
+
+서버의 구성은 다양한 방법이 가능하다.
+
+일반적인 웹 서비스의 배포 구조 
+
+서버 프로그램 > 정적 파일들 OR WSGI > django
+
+Java와 Jar
+
+spring boot을 빌드하면 jar 파일이 나온다 
+
+jar = Java ARchive
+
+Java로 작성 후 컴파일된 Java Bytecode와 실행을 위해 필요한 다양한 자원을 배포를 위하여 모아놓은 파일의 형태
+
+쉽게 말해 다른 형태의 압축파일
+
+그래서 압축해제 가능
+
+프로젝트 구조와 Jar 파일 구조는 매우 비슷함
+
+Manifest
+
+Jar 파일은 “java -jar” 명령으로 실행할 수 있다.
+
+Web Application의 구조
+
+Presentation Layer 사용자와 직접적으로 맞닿는 부분.
+
+Logic Layer 요청을 처리하는 결정을 내리는 부분.
+
+Data Layer 데이터를 저장하고 불러오는 부분.
+
+Dispatcher, Controller, Service, View Resolver, Repository, Database

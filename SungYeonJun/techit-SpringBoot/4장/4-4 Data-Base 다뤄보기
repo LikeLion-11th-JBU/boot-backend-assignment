@@ -1,0 +1,116 @@
+웹 서비스를 만들때 데이터베이스는 필수적인 부속품이라고 볼 수 있습니다. 저희가 Java 소스 코드로 작성하는 `PostDto` 객체나 `List` 객체 등, 변수에 할당하여 그 내용을 사용하는 데이터는, 기본적으로 메모리 상에서 관리되는 휘발성 데이터입니다. 사용자가 입력한 데이터를 저장하거나, 오래 지속되는 데이터를 보여주기 위해서는 해당 데이터를 데이터베이스에 저장하는것이 필수 적입니다.
+
+알아둬야 할것은, 데이터베이스는 기본적으로 Web Application이랑은 별개인 소프트웨어라는 점입니다. 어플리케이션의 상태와 상관없이 저장되고 조회가 되는 데이터는 어느 시점에서 Filesystem, 즉 하드디스크에 저장되어야 합니다. 데이터베이스는 이 과정을 좀더 편히 해주는 도구의 일종이자, 컴퓨터 통신으로 데이터를 주고받을 수 있는 서버 프로그램이라고 생각해 주시면 이해가 좀더 편할 수 있습니다. 관계형 데이터베이스가 설치되면, 컴퓨터의 하드디스크 공간을 일정부분 차지하여, 그곳에 입력받은 데이터를 관리하고, 데이터에 대한 조작의 요청을 받아 데이터를 조작할 수 있는 인터페이스를 제공하는 것입니다.
+
+일반적으로 SQL과 같은 나름의 표준과 문법이 존재하는 언어를 사용하는 경우도 있는 반면, 제품 내부의 구현은 만든 단체에 따라 다르기 때문에 어떤 데이터베이스를 사용하느냐에 따라 익혀야 되는 기능이 조금씩 차이가 존재합니다.
+
+## 관계형 데이터베이스
+
+데이터베이스 중에서도 가장 많은 곳에서 사용되는 데이터베이스는 관계형 데이터베이스(Relational DataBase, RDB) 입니다. 관계형 데이터베이스는 Codd의 12 규칙 (0 ~ 12 까지 13가지 규칙)을 따르고자 하는, 관계(Table)의 형태로 데이터를 관리하는 데이터베이스를 부르는 총칭입니다. 주로 RDBMS라는 형태로, 관계형 데이터베이스와 그것을 관리하는 도구를 총채적으로 나눠서 판매합니다. 다만 시중에 12규칙 전체를 따르는 관계형 데이터베이스 제품은 찾기 힘들다고 보실 수 있습니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/978a93c2-90d8-4168-97fe-72c7657dda7e/Untitled.png)
+
+앞서 이야기했듯, RDB는 관계로 데이터를 관리합니다. 이 관계라는 것은 행과 열로 이뤄진 데이터, 즉 엑셀이나 표, 테이블과 같이 저장된 데이터를 의미합니다. 여기에 SQL을 이용하여 데이터베이스에 요청을 전달하면, 조건에 맞는 데이터를 마찬가지로 테이블의 형태로 제공하게 됩니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/e04401bf-ccf6-41f7-83ea-3d4fe8d5b35e/Untitled.png)
+
+RDB를 다루면서 저희는 Table을 정의하고, Table이 들고있는 데이터의 형태를 정의하게 됩니다. 이러한 Table은 기본적으로 Column과 Row로 이뤄졌습니다. 여기서 하나의 Row는 해당 테이블의 데이터 형태를 띠고 있는 기록 하나이며, Column은 각 Row의 데이터가 어떤 의미를 지닌 데이터인지를 나타내는 구분자로 존재합니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/50f860bb-22f0-419d-a5a8-c937457b7cf5/Untitled.png)
+
+이때 한 Table 안의 Row를 정확하게 지칭할 수 있는 Column 또는 Column의 모음을 Primary Key라고 정의합니다. 일반적으로는 ID라는 이름의 Column을 기본으로 만들어서 사용하게 됩니다. 이 Primary Key는 데이터베이스의 성능에 중요한 작용을 하는 요소입니다. 임의로 테이블을 만들더라도 반드시 ID Column을 만들고 Primary Key로 설정해주도록 합시다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/9f178874-6759-498b-9452-dc7cde6a2c14/Untitled.png)
+
+일반적인 웹 서비스라면 하나의 테이블로 모든 데이터를 표현하기 어렵습니다. 그래서 다양한 테이블을 만들고, 각 테이블이 서로 어떤 관계에 있는지를 그림으로 표현하여 정보를 공유하게 됩니다. 이러한 그림을 Entity-Relationship Diagram 이라고 부르게 됩니다.
+
+Table의 Row 하나는 기본적으로 데이터 개체(Entity) 하나입니다. 객체 지향 프로그래밍에서 객체들간의 상호 작용을 통해 프로그램을 만들어 나가듯이, 저희가 다루는 데이터들 역시 서로 관계가 존재합니다. 저희가 만든 Post, 즉 게시글을 기준으로 하면, 게시글은 어떤 특정 게시판을 대상으로 작성되는 자원입니다. 또는 게시글을 작성한 사용자의 정보 또한 존재할 수 있습니다. 하나의 게시판에는 여러 게시글이 존재하며, 한명의 사용자는 복수의 게시글을 작성할 수 있습니다. 만일 게시글에 ‘좋아요'를 하는 기능등이 존재한다면, 한 사용자는 복수의 게시글을 ‘좋아요’ 할 수 있으며, 하나의 게시글은 복수의 사용자에게서 ‘좋아요'를 받을 수 있습니다.
+
+이런 다양한 데이터들을 Entity라는 단위로 표현하고, 그 Entity들이 서로 어떤 관계를 가지고 있는지를 표현하는 것이 바로 Entity-Relationship Diagram 입니다. 간단하게 생각하면 각 Table이 가지고 있는 데이터들이 어떤 관계를 맺는지를 표현한 도표라고 생각할 수 있습니다. 간단한 서비스라도 ERD를 그려서 데이터의 연관관계를 생각하고 만드는지 아닌지는, 개발의 난이도를 여러 방면으로 변화시키는 요소가 됩니다.
+
+데이터베이스를 다루는데 필요한 기초 지식을 알아보았습니다. 이제 실제 데이터베이스를 설치하여 사용해 봅시다.
+
+## Mysql 사용해보기
+
+말씀드렸다시피, 관계형 데이터베이스 관리 시스템 (RDBMS)은 저희가 만드는 웹 어플리케이션과 별개로 작동하는 소프트웨어 입니다. 인터넷을 통해 요청을 주고받을 수 있는 소프트웨어 이기 때문에, 일반적으로 관계형 데이터베이스 서버라고 부릅니다.
+
+저희는 MySQL이라는 관계형 데이터베이스를 사용할 것입니다. MySQL은 앞서 설명한 RDBMS의 형태로 제공됩니다. 설치를 하게되면 `3306` 포트에 MySQL Server가 요청을 받을 수 있게됩니다. 여기에 `Mysql Workbench` 라는 도구를 이용하여,  만일 Docker가 설치되고 정상적으로 운영중이라면, MySQL은 Docker로 간단하게 설치할 수 있습니다.
+
+```java
+docker run --name some-mysql -e MYSQL_ROOT_PASSWORD=my-secret-pw -d -p 3306:3306 mysql:8
+```
+
+그 외 MySQL Workbench의 경우, MySQL 홈페이지, macos 같은 경우 homebrew를 이용해서도 설치할 수 있습니다.
+
+[MySQL :: Download MySQL Workbench](https://dev.mysql.com/downloads/workbench/)
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/d84dc0a3-240d-4139-97f3-b66900674d1d/Untitled.png)
+
+### MySQL root 계정으로 접속
+
+MySQL 서버를 처음 설치하면 root 계정, 즉 관리자 계정이 있는 상태입니다. 이 관리자 계정으로 접속을 해서 Database 관리를 진행하여야 합니다. 
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/34e06b5f-1bce-4500-bcae-6ba5b48d5501/Untitled.png)
+
+어떤 컴퓨터(서버)의 MySQL인지 알수 있는 간단한 Connection Name을 작성하고, `Username` 에 `root` , `Store in Keychain` 버튼을 이용해 비밀번호를 입력합니다. `Test Connection` 버튼을 누르면 연결 테스트를 진행할 수 있습니다.
+
+### 사용자와 Schema 추가
+
+여기부터 진행되는 내용은 어떤 RDBMS를 사용하는지에 따라 다릅니다. 다만 일반적인 상용 RDBMS라면, 사용자를 분리하고, 데이터베이스 Schema (또는 다른 명칭으로 부르는 데이터베이스 테이블의 모음)를 별도 생성하고, 접근 권한을 관리할 수 있습니다. 이를 바탕으로 개발 / 상용 DB를 나누거나, 개발 / 상용 계정, 또는 개발자 / DBA 계정등을 나누는 기능이 존재한다는 점을 기억해 두시기 바랍니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/43e64bbe-d934-4d9a-bcde-ab2b5d54f2ca/Untitled.png)
+
+왼쪽 위의 `Administration` 과 `Schemas` 탭이 존재하는데, 이는 좌측 창에 노출되는 정보가 DB 관리용 정보인지, DB 내의 접근 가능한 Schema의 정보인지에 대한 탭입니다. 우선 `Schemas` 탭을 선택하여,
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/f83ac87b-408f-4f3f-822a-51d1108e619b/Untitled.png)
+
+우클릭을 통해 `Create Schema` 를 선택합시다. MySQL에서의 Schema는 Database와 동의어로 사용되는 용어로서, 특정 연관된 테이블들을 모으는 단위입니다. Schema 단위로 DB를 관리하게 되면, 서로 무관한 데이터 테이블을 분리, 접근 권한을 달리하여 보안과 관리의 편리성을 높일 수 있습니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/dd9405a9-b765-48d5-b5ff-85adc7295e2e/Untitled.png)
+
+Schema 이름을 넣어주고 오른쪽 아래의 `Apply` 를 선택하면 새 창에 DDL Preview가 나옵니다. 실제로 MySQL 서버로 전달될 쿼리입니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8602d5ce-b59b-4e8b-8073-9a1ee5680542/Untitled.png)
+
+오른쪽 아래의 Apply를 선택하면 
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/d7e8dfc2-4ef9-401e-94fa-933cef110d51/Untitled.png)
+
+와같이 진행되고 왼쪽 탭에 Schema가 추가됩니다. 이제 이 Schema를 사용하기 위한 사용자를 정의해야 합니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/337bbff5-071b-4b3e-a4ac-077100899d7f/Untitled.png)
+
+왼쪽의 `Administration` 탭을 선택하고, `Users and Privileges` 소메뉴를 선택하면, 사용자 관리 창이 등장합니다. 왼쪽 아래에는 `Add Account` 버튼이 있습니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8cb70e08-acdd-411c-9c27-524b4b907757/Untitled.png)
+
+버튼을 누르면 본래 선택되있던 `Login` 메뉴의 입력창이 활성화 됩니다. 여기에 사용자 이름과 비밀번호, 비밀번호 확인을 입력 후, 오른쪽 아래의 `Apply` 눌러 완료하면 됩니다.
+
+- Limit to Hosts Matching
+    
+    새로 생성한, 또는 존재하는 사용자의 접속 가능 Host 설정으로, 쉽게 말해 어떤 컴퓨터에서 접속이 가능한지에 대한 설정입니다. `%` 의 경우 `multi-character wildcard` 로서, 이렇게 설정하면 세계 어디서든 데이터베이스에 접근이 가능할 경우 접속할 수 있습니다.
+    
+
+사용자를 만들었다면, `Schema Privileges` 메뉴로 넘어가서,
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/df1840a4-5505-4a4c-8da0-9f75ba982645/Untitled.png)
+
+`Add Entry` 메뉴를 선택해 권한을 부여할 `Schema` 를 선택하고,
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ac177dcf-2f3d-41ba-ba60-951c86ab402e/Untitled.png)
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c2bd7226-1f7e-4edf-8157-f8bbb7540eaa/Untitled.png)
+
+해당 `Schema` 제공할 권한을 취사 선택하고 `Apply` 를 눌러봅시다. 이러면 현재 `newuser` 는 `new_schema` 에 대한 권한을 다 가지게 됩니다.
+
+이제 사용자가 완성되었으니, Workbench 최 좌상단에 🏠 버튼을 누르면 다시 첫 화면으로 갑니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/df065786-b866-477b-9ad5-02916f48e13c/Untitled.png)
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/d562251d-36f5-4634-baa0-569e8084185f/Untitled.png)
+
+여기서 ➕ 버튼을 눌러 좀전에 만든 사용자로 로그인을 진행해 봅시다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/78715a3c-09e1-4b87-95a4-930e3f0af918/Untitled.png)
+
+이제 특정 서비스를 개발할때는, 방금 생성한 계정과 Schema를 활용하면, 다른 Database와는 충돌하지 않게 서비스 개발을 진행할 수 있게 됩니다.

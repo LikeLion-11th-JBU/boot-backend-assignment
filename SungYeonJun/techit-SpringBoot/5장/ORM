@@ -1,0 +1,304 @@
+저희가 테이블을 설계하고 데이터를 넣게되면, 각 테이블들이 서로서로 관계를 가지기 시작합니다. 앞서 예시에서 사용한 Post와 Board 역시 마찬가지로, Board 객체 안에 Post 객체가 존재하는 형태로 만들어 집니다. 만약 이를 Java 클래스로 정의한다면 아래와 같이 표현할 수 있을것입니다.
+
+```java
+public class PostDto {
+    private int id;
+    private String title;
+    private String content;
+		private String writer;
+}
+```
+
+```java
+public class BoardDto {
+    private int id;
+    private String name;
+		private List<PostDto> posts;
+}
+```
+
+하지만 실제 테이블 데이터의 형태는 위와 다르게 정의됩니다. 테이블에는 하나의 객체라는 데이터를 컬럼에 넣기가 어렵기 때문에, 다른 테이블의 ID를 조회하기 위한 Foreign Key를 테이블에 정의하고, 해당 Foreign Key를 이용하여 다른 테이블의 Row의 Primary Key를 조회하는 것이 최선입니다.
+
+테이블형 구조로 데이터를 저장하는 관계형 데이터베이스는 많은 인기를 끌었지만, 그 형태가 객체지향 관점과 거리가 존재했습니다. 그래서 객체와 관계(테이블형 데이터)를 연관지어서 사용하고자 하는 노력들이 생겨났고, 그 결과 관계형 데이터를 객체로 표현하는 프로그래밍 기법인 ORM이라는 기술이 생기게 되었습니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/71dd03bd-065d-4b69-932d-e420f5bb3849/Untitled.png)
+
+다른 테이블에 존재하는 특정 Row를 지정하기 위해 사용하는 Foreign Key를, 프로그래밍 단계에서 그것을 실제로 그 데이터를 가진 Entity 객체로서 활용할 수 있게 해주는 것부터 다양한 방법으로 원본 데이터베이스를 쉽게 다루고자 하는 목적에서 생겨난 기술입니다.
+
+## JPA와 Hibernate
+
+Spring Boot에서도 ORM기술을 활용할 수 있습니다. ORM은 기본적으로 데이터베이스를 사용하는 방법 중 하나기 때문에, MyBatis 처럼 의존성을 추가하여 활용하게 됩니다. 여기서 추가하는 의존성은 `spring-boot-data-starter-jpa` 입니다.
+
+JPA는 Jakarta Persistence (Java Persistence API에서 변경)의 약자로, Java 언어를 사용할때 관계형 데이터를 표현하기 위한 API입니다. JPA에 정의된 많은 어노테이션을 기반으로, 저희가 `Entity` 라고 정의하는 객체들이 관계형 데이터베이스 상에서 어떻게 정의되어야 하는지를 작성할 수 있는 API라고 보시면 됩니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/31658746-c127-461c-b57d-8820d1bcc55b/Untitled.png)
+
+여기서 JPA의 역할은 오롯이 Entity의 표현까지 입니다. 위의 예시에서 `@Id` 는 관계형 데이터베이스에서 Primary Key의 역할을 하는 멤버변수이다라는 것을 표현하지만, 실제로 관계헝 데이터베이스 상에 그렇게 적용되었을지는 JPA가 신경쓰지 않습니다. 표현하는 방식이 정의된게 JPA이지, 해당 표현을 적용시켜주는 API가 아니기 때문입니다. JPA로 Entity를 작성하였다면, 다른 프레임워크가 이를 감지하여 설정된 데이터베이스에 적용시켜주게 됩니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/957c3617-22f0-4bb9-8bce-99b85f55b7b7/Untitled.png)
+
+이때 등장하는 것이 Hibernate Framework 입니다. Spring Boot Starter Data JPA에도 포함된, JPA라면 기본적으로 등장하는 프레임워크 입니다. 일반적으로 JPA라고 이야기를 하는 많은 경우, 실제로 내부에서 동작하는 프레임워크는 Hibernate라고 생각할 수 있습니다. Hibernate는 JPA로 정의된 `Entity` 객체들의 정의를 확인하여 관계형 데이터베이스에 적용(자동 생성 DDL을 통해 테이블 등 생성)시키는 작업들을 진행하게 됩니다. 그 외에 내부적으로 데이터베이스와 연결된 세션 관리 등을 위한 기능들이 있는데, 이런 작업의 대다수를 설정으로 정해줄 수 있습니다. 그리고 이런 설정들은 Spring Boot Starter에 기본적으로 포함되어 있습니다.
+
+JPA랑 Hibernate는 일상적으로 함깨 많이 사용되는 용어이지만, 그 역할은 분명히 다릅니다. 관계형 데이터베이스와 JDBC에 익숙해진다면, JPA를 기반으로 저희가 직접 ORM 프레임워크를 만들수도 있습니다.
+
+## JPA 사용해보기
+
+앞서 언급하였듯 JPA를 활용하기 위해선 `spring-boot-starter-data-jpa` 의존성이 필요합니다. 또한 Hibernate도 결국 Database와 소통하기 위해 JDBC를 사용하는 만큼 MySQL Driver도 필요합니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/d465de02-dc87-40df-93bb-af2c8ae16fca/Untitled.png)
+
+```groovy
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	runtimeOnly 'mysql:mysql-connector-java'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+```
+
+- H2
+    
+    JPA는 데이터베이스를 직접 조작하기 때문에 개발과 테스트 단계에서 다른 데이터베이스를 사용하는 것이 좋을 수 있습니다. 그래서 H2 의존성을 첨부하여, 상황에 따라 다른 데이터베이스를 사용하기도 합니다. H2는 메모리 상에서 사용할 수 있는 관계형 데이터베이스로, 테스트 등을 위해 자주 사용됩니다. 
+    
+    ```groovy
+    runtimeOnly 'com.h2database:h2'
+    ```
+    
+    챕터 6 이후에서도 자주 사용하게 됩니다.
+    
+
+### application.yml
+
+Spring Boot Starter에는 기본적인 JPA 설정이 되어있기 때문에, 저희가 할일은 기초적인 작업 몇가지를 더해주는 것입니다. `resources` 디렉토리에 있는 `[application.properties](http://application.properties)` 파일을 `application.yml` 파일로 바꿔주고 내용을 작성해줍시다.
+
+```yaml
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/demo_jpa_schema
+    username: demo_jpa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+```
+
+내용을 확인하면 `spring.datasource` 의 내용은 사용할 데이터베이스에 대한 설정입니다. 저희는 MySQL을 기준으로 사용중입니다.
+
+`spring.jpa` 아래의 설정은 Hibernate가 어떻게 작동해야 할지를 작성하는 내용입니다. 이중 `spring.jpa.hibernate.ddl-auto` 설정은 현재 `create`으로 정의되어 있는데, 이는 어플리케이션 실행시에 테이블과 기타 필요한 데이터베이스 작업을 어찌 이행할지를 설정하는 부분입니다. 지금은 `create` 이지만, 이후 개발 단계에선 `update` , 상용 단계에선 `none` 으로 해주시는게 좋습니다. `create` 로 남아있는경우, 이미 만들고자 하는 테이블이 있으면, **존재하는 테이블을 DROP하고 진행하기 때문에** 데이터가 사라지게 됩니다.
+
+### Entity 객체 정의하기
+
+JPA에서는 한 테이블의 Row에 해당하는 데이터를 표현하기 위해 Entity를 사용합니다. Java class를 정의하고, 해당 클래스에 `@Entity` 어노테이션을 덧붙이면, Entity 객체임을 표시하게 됩니다. 이 어노테이션이 붙은 객체를 Hibernate가 확인하고, 데이터베이스 상에 테이블로 정의합니다.
+
+```java
+@Entity
+public class PostEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String title;
+    private String content;
+    private String writer;
+		...
+}
+```
+
+특별한 어노테이션을 추가하지 않으면, Hibernate에서 자동으로 어떤 RDB 자료형인지를 정해주게 됩니다. 일반적으로 `String` 은 `varchar(255)` 로 적용됩니다.
+
+![MySQL에 적용된 모습](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/22b6c1be-79bd-4a7a-a514-d1bed8919a91/Untitled.png)
+
+MySQL에 적용된 모습
+
+`@Id` 의 경우, 해당 어노테이션이 추가된 멤버 변수가 테이블의 Primary Key 역할을 하는 컬럼을 묘사한 변수라고 이해합니다. `@GeneratedValue` 는 데이터베이스별로 ID를 생성하는 전략이 다른 경우를 위해 추가적인 정보를 전달해주는 어노테이션 입니다.
+
+- `@GeneratedValue`
+    
+    저희는 현재 MySQL을 사용하여 데이터베이스를 구성하는 것을 염두에 두고 `Entity` 를 작성 중입니다. MySQL은 테이블을 생성할시 `auto increment` 옵션을 추가할 수 있습니다. 이 경우 새 Row가 생성될때 해당 Column에 직전 Row의 해당 Column보다 `1` 더 큰 값이 들어가게 됩니다.
+    
+    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/dce24604-7bae-43c1-b986-73a3344f42e7/Untitled.png)
+    
+    하지만 Oracle 같은 데이터베이스는 Auto Increment 옵션이 없습니다. Oracle에 ID를 MySQL 처럼 부여하기 위해서는, Sequence를 수동으로 만들어서 제공해 주어야 합니다. 이 경우 `@GeneratedValue` 에 들어가는 인자가 변하게 되며, 추가적인 어노테이션도 제공하여야 합니다. 사용하는 데이터베이스가 변경되는 상황에서, 해당 내용을 변경하여야 되는 상황이 발생할 수 있다는점 염두에 두시면 되겠습니다.
+    
+
+### BaseEntity (MappedSuperClass)
+
+상황에 따라 여러 `Entity` 가 공유할만한 Column이 있기도 합니다. 예를 들어 일반적인 `Entity` 라면 생성된 시간에 대한 정보, 갱신된 시간에 대한 정보들을 담고 있다면, 서비스 제공 단계에 유용하게 사용할 수 있습니다. 이럴때 사용할 수 있는게 `MappedSuperClass` 입니다.
+
+```java
+@MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
+public abstract class BaseEntity {
+    @CreatedDate
+    @Column(updatable = false)
+    private Instant createdAt;
+
+    @LastModifiedDate
+    @Column(updatable = true)
+    private Instant updatedAt;
+		...
+}
+```
+
+추상 클래스로 `BaseEntity` 를 선언하면서, `@MappedSuperClass` 어노테이션을 추가해주면 이 클래스는 자기 자신이 `Entity` 로 존재하는 용도가 아닌, 다른 `Entity` 들이 상속 받기 위한 클래스라는 의미를 부여하게 됩니다.
+
+여기에 더해 저희는 `Instant` 형의 변수 `createdAt` 와 `updatedAt` , 그리고 각각 `@CreatedDate` 와 `@LastModifiedDate` 어노테이션이 추가하였습니다. 이름에서 알 수 있듯, 이는 `Entity` 의 생성 시각, 갱신 시각을 알려주기 위한 어노테이션 입니다. 시각을 기록하여야 하기 때문에, 저희는 `@EntityListeners` 를 이용해 `AuditingEntityListener` 를 이용해, 해당 `Entity` 를 이용한 객체의 사용을 감시하도록 합니다. 이렇게 작성하면, 신경쓰지 않아도, 해당 `BaseEntity` 를 상속받는 `Entity` 는 생성 시각 (`createdAt`) Column과 갱신 시각 (`updatedAt`) Column을 가지고 테이블이 작성됩니다.
+
+```java
+@Entity
+public class PostEntity extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String title;
+    private String content;
+    private String writer;
+		...
+}
+```
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/faacc195-0d77-430e-adea-c3f92100b1ae/Untitled.png)
+
+### JPA Relationships
+
+관계형 데이터베이스를 쓰면 결국엔 서로 다른 테이블의 데이터 간의 소유 관계에 대해서 이야기하게 됩니다. 여기서 흔히 사용하게 되는 말들이 `1:N`, `M:N` 관계 등을 이용해 표현합니다(ERD에서 has-a 관계라는 말도 사용할때가 있습니다). 관계형 데이터베이스에서 이를 표현하기 위해 다른 테이블의 PK를 가리키기 위한 Foreign Key를 설정하여야 했다면, JPA를 이용하면 이 과정이 간소화 됩니다.
+
+먼저 `PostEntity` 와 연관이 있는 `BoardEntity` 를 만들어 봅시다.
+
+```java
+@Entity
+@Table(name = "board")
+public class BoardEntity extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "board_name")
+    private String name;
+
+		...
+}
+```
+
+`BoardEntity` 는 일반적인 커뮤니티의 게시판을 나타내는 `Entity` 객체 입니다. 크게 복잡한 정보는 지금 당장 필요 없고, ID와 이름을 담기위한 멤버 변수만 있습니다.
+
+이제 `PostEntity` 에 자신이 소속된 `BoardEntity` 에 대한 정보를 추가해 봅시다.
+
+```java
+@Entity
+public class PostEntity extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String title;
+    private String content;
+    private String writer;
+
+    @ManyToOne(
+            targetEntity = BoardEntity.class,
+            fetch = FetchType.LAZY
+    )
+    private BoardEntity boardEntity;
+    ...
+}
+```
+
+`@ManyToOne` 어노테이션은 해당 클래스 변수 `boardEntity` 와 `PostEntity` 가 `M:1` 관계를 가지고 있다는 것을 의미합니다. 추가한 뒤 JPA가 테이블을 생성하는 것을 확인하면, `board_id` 라는 column이 추가되는 것을 확인할 수 있습니다.
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/47356a18-28d0-4d75-941b-e830c5b8a539/Untitled.png)
+
+만약 `BoardEntity` 에서 `PostEntity` 를 확인하고 싶다면, `@OneToMany` 를 활용하면 됩니다. 이 경우 실제 데이터베이스 상에 변동이 생기지는 않지만, Java 코드 상에서 참조하는 것은 문제 없습니다.
+
+```java
+@Entity
+@Table(name = "board")
+public class BoardEntity extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToMany(
+            targetEntity = PostEntity.class,
+            fetch = FetchType.LAZY,
+            mappedBy = "boardEntity"
+    )
+    private List<PostEntity> postEntityList = new ArrayList<>();
+    ...
+}
+```
+
+여기서 `mappedBy` 는 참조되는 상대방 `Entity` 에서 관계를 맺는 `Entity` 의 멤버변수 이름을 작성해주면 됩니다.
+
+- 참고
+    
+    `@ManyToOne` , `@OneToMany`에 추가된 `targetEntity` , `fetch` 등의 인자는 필수로 전달해야 하는 것은 아닙니다. `targetEntity` 같은 경우 일반적으로 멤버 변수의 타입을 기반으로 확인이 가능하며, `fetch` 는 기본값이 존재하기 때문입니다. 이후에 사용되는 
+    
+- `FetchType` 에 대하여
+    
+    `@OneToMany` 나 `@ManyToOne` 에 전달하는 `FetchType` 의 경우, 관계를 맺고 있는 다른 `Entity` 의 조회를 어떻게 처리하느냐에 대한 설정이며, 기본값은 `EAGER` 입니다. 이는 상황에 따라 해당 `Entity` 에 해당하는 실제 데이터가 필요할때도 안할때도 있기 때문입니다.
+    
+    저희가 게시판 목록을 불러오는 상황에 대하여 생각하게 된다면, 각 게시판에 있는 `PostEntity` 의 경우 굳이 필요하지 않은 데이터입니다. 하지만 `FetchType.EAGER` 설정이 있다면, `BoardEntity` 의 `PostEntity` 를 사용하지 않는다고 하더라도 필요한 데이터에 대한 조회작업이 진행되게 됩니다. 이를 위의 예시처럼 `FetchType.LAZY` 로 변경하게 된다면, `BoardEntity.getPostEntityList()` 함수 등 해당 데이터를 실제로 사용해야 되는 타이밍에 데이터 조회가 이뤄집니다.
+    
+
+### @Table, @Column, @JoinColumn
+
+JPA를 사용한다면, 저희가 정의하는 것은 Java `Entity` 객체 입니다. Hibernate는 이 `Entity` 객체를 사용하여 데이터베이스에 테이블을 자동으로 정의해주는데, 테이블 이름, Column 이름 등도 마찬가지로 특정한 규칙을 기준으로 정의됩니다. 그 외에 데이터베이스를 사용하는데 있어서 다양한 데이터베이스 설정을 전달할 수 있습니다. 이때 사용하는 것이 `@Table` , `@Column` 등의 어노테이션 입니다.
+
+```java
+@Entity
+@Table(name = "post_table")
+public class PostEntity extends BaseEntity {
+		...
+}
+```
+
+위와 같이 `name = "post_table"` 을 주게 된다면, 본래 `post` 라고 생성되던 테이블이 `post_table` 로 생성되게 됩니다. (다만 이는 `ddl-auto` 를 비롯한 설정이 테이블을 생성하는 옵션으로 되어 있을때 작동합니다.)
+
+만약 Column의 이름을 바꾸고 싶다면, `@Column` 어노테이션을 멤버 변수에 추가해주면 됩니다.
+
+```java
+@Entity
+@Table(name = "board")
+public class BoardEntity extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "board_name")
+    private String name;
+		...
+}
+```
+
+`@ManyToOne` 관계를 표현하게 되면, 데이터베이스 상에 Column이 생기게 됩니다. 이 Column의 이름을 수정하고 싶다면, `@JoinColumn` 을 사용해봅시다.
+
+```java
+@Entity
+@Table(name = "post")
+public class PostEntity extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String title;
+    private String content;
+    private String writer;
+
+    @ManyToOne(
+            targetEntity = BoardEntity.class,
+            fetch = FetchType.LAZY
+    )
+    @JoinColumn(name = "board_id")
+    private BoardEntity boardEntity;
+```
+
+그 외에 데이터베이스에서 필요로 하는 인덱스, Unique Constraint, nullable이나, `BaseEntity` 에서 활용했던 `updatable` 같은 옵션도 있습니다. 이들은 후에 관계형 데이터베이스에 대한 공부를 좀더 진행하고

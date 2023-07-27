@@ -1,0 +1,152 @@
+모든 사용자가 똑같이 들어가야될 기능이 무엇이 있을까? 아니면 사용자가 받아야될 기능이 아니라고 하더라도, 유지,보수 하는 입장에서 이러한 기능이 있어야 된다, 또는 서비스를 제공하는 입장에서 이러한 기능은 있어야된다.(대표적으로 login같은 기능이 있어야된다.) 추가로 서버로 오는 질이 좋지않은 요청 같은 것들을 처리를 하는 데 있어서도 필요한 기능들이 있을 것이다.(보안)
+-> 위에 필요한 기능들을 구현하기 위해서 2군데에 조작을 할 수 있다. 
+첫 번째는 filter로 외부 클라이언트와 dispatcher Servlet 사이에 들어오게 된다. (filter는 SpringBoot의 일부분이 아니라 java로 만든 web서버 프로그램에서 사용을 하게 되는 인터페이스이다. 하지만 SpringBoot 프레임워크에서는 Bean으로 filter를 등록해준다. -> filter는 SpringBoot 외부에 있는 기능이다. )
+두 번째는 dispatcher Servlet과 HandlerMapping 사이와 dispatcher Servlet과 Controller 사이에 interceptor라는 것을 만들 수 있다. (interceptor는 SpringBoot 내부에 위치한다.) interceptor는 HandlerMapping에 대한 요청을 처리를 하기위한 interceptor이다.
+Filter는 자바 서버, interceptor는 SpringBoot 프레임워크에서 제공을 하는 기능이다. 
+Filter와 interceptor는 요청과 응답이 오고가는 와중에 각자 기능을 적용을 시킬 수 있도록 만들어진 인터페이스이다. 예외처리는 다 Spring 프레임워크 안에서 일어난다. 즉, interceptor에서 발생한 예외는 설정을 한 예외처리 항목하에서 작동을 하지만 Filter에서 발생한 예외는 불가능하다. 
+
+Filter의 인터페이스에는 한개의 함수가 존재한다. doFiler()라는 함수가 존재한다. doFiler는 인자로 ServletRequest와 ServletResponse, FilterChain을 받는다. 즉, HttpServletRequest와 HttpServletResponse를 기본 인터페이스로 사용하지 않기 때문에 조작이 가능하다. -> ServletRequest를 HttpServletRequest로 바꿀 수도 있고, 아니면 아예다른 HttpServletRequest를 구현하는 무언가로 만들어서 사용할 수도 있다. FilterChain 인자를 사용해 filter의 전후를 구분한다. 즉, FilterChain의 chain에 속해있는 doFiler함수를 호출을 하는 순간 여러개의 Filter가 겹쳐져있는 FilterChain에서 우리가 구현한 doFiler가 어느 FilterChain에 속해있느냐에 대한 변수이다. -> 요청, 응답을 조작할 수 있다. -> 비지니스 로직과 무관한 기능 구현에 사용한다. ( 보안이나 데이터 인코딩 등)
+
+interceptor의 인터페이스에는 preHandle(), postHandle(), afterCompletion()으로 구현할 함수가 나눠져 있다. preHandle과 postHandle 사이에서 Controller와 model에 대한 조작이 이루어진다. postHandle과 afterCompletion 사이에는 요청,응답의 전달이 이루어진다. 즉, preHandle은 Controller로 요청이 들어가기 전에 사용하는 함수이고, postHandle은 Controller에서 응답을 만들고 난 다음에 호출이 되는 함수이다. afterCompletion은 응답을 클라이언트에게 보내고 난 다음에 실행이 되는 함수이다. doFiler 함수 하나였던 filter에 비해서는 더 많은 함수가 존재한다. -> 쫌 더 정밀하게 작업을 하기위해서 사용할 수 있다. 
+postHandle의 인자로서 ModelAndView가 들어가있다. ModelAndView는 실제로 응답으로서 전달이 될 ModelAndView이다. 그렇기 때문에 Spring에서 Spring을 사용해서 페이지를 서비스하고 있다면 postHandle interceptor에서 자신이 원하는 추가적인 정보들을 더 넣어줄 수 있다. -> postHandle에서는 ModelAndView 객체를 조작할 수 있다. -> 비지니스 로직과 연관성이 높은 기능 구현에 사용한다. (사용자 인증이나 API 처리 내용등)
+
+
+1. Filter를 구현하기 위해서 filter라는 패키지를 생성한다.
+
+1-1. filter 패키지 안에 TransactionLogFilter라는 새로운 자바 클래스를 생성한다.  -> 어떠한 요청이 들어오고, 그 요청이 어떠한 statuscode를 가지고 돌아갔는지를 확인하기 위한 filter이다. 우선 filter를 implements해준다.
+
+1-2. HttpServletRequest를 (HttpServletRequest) request로 확인을 해준다.
+public class TransactionLogFilter implements Filter {
+    private static final Logger logger = LoggerFactory.getLogger(TransactionLogFilter.class);-> 로깅을 하기위한 로거 선언
+    @Override
+    public void doFilter(ServletRequest request,
+                         ServletResponse response,
+                         FilterChain chain) throws IOException, ServletException {
+        String requestUUID = UUID.randomUUID().toString().split("-")[0];
+        HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+    }
+}
+
+1-3. 로거를 시작하기 위해서 
+        logger.debug("[{}] start request: {} {} ",
+                requestUUID,
+                httpServletRequest.getMethod(),
+                httpServletRequest.getRequestURI()// 첫번째로 사용할 인자에 requestUUID를 넣는다. 두 번째 인자로는 일반적은 Http 요청을 작성하는 순서와 비슷하게 로그를 쓸 것이다.
+                );
+위 코드를 추가한다. 이때 중요한 점은 아직 chain의 dofilter를 호출하기 전까지가 Filter에서의 요청이 Spring으로 넘어가지 전 상태인 것이다.
+이것을 확인하기 위해서 logger.info(" * response status code: {}", ((HttpServletResponse) response).getStatus()); 코드를 추가한다.
+
+1-4. chain으로 doFiler를 호출한다.
+        chain.doFilter(request,response)
+        HttpServletResponse httpServletResponse = (HttpServletResponse) response;
+        logger.info(" * response status code: {}", ((HttpServletResponse) response).getStatus());
+
+1-5. 어떤결과가 있었는지 확인을 한다.
+logger.info("[{}], send response: {}",
+                requestUUID, httpServletResponse.getStatus()); 
+
+requestUUID 라는 부분은 결과적으로 Filter를 하면서 로그가 중구난방으로 찍힐 것이다. controller, service, Component, Repository 등을 돌면서 수많은 로그들이 쌓일 것인데, 그것들이 같은 requestUUID를 기준으로 한다는것을 보기 위한 UUID String 값을 만들어 준것이다. 
+@Component
+public class TransactionLogFilter implements Filter {
+    private static final Logger logger = LoggerFactory.getLogger(TransactionLogFilter.class);
+    @Override
+    public void doFilter(ServletRequest request,
+                         ServletResponse response,
+                         FilterChain chain) throws IOException, ServletException {
+        String requestUUID = UUID.randomUUID().toString().split("-")[0];
+        HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+        logger.debug("[{}] start request: {} {} ",
+                requestUUID,
+                httpServletRequest.getMethod(),
+                httpServletRequest.getRequestURI()// 첫번째로 사용할 인자에 requestUUID를 넣는다. 두 번째 인자로는 일반적은 Http 요청을 작성하는 순서와 비슷하게 로그를 쓸 것이다.
+                );
+        logger.info(" * response status code: {}", ((HttpServletResponse) response).getStatus());
+        chain.doFilter(request,response);
+        HttpServletResponse httpServletResponse = (HttpServletResponse) response;
+        logger.info(" * response status code: {}", ((HttpServletResponse) response).getStatus());
+        logger.debug("[{}], send response: {}",
+                requestUUID, httpServletResponse.getStatus());
+    }
+}
+
+2. interceptor를 구현하기 위해서 interceptor라는 패키지를 만든다.
+
+2-1. HeaderLoggingInterceptor 라는 클래스를 interceptor 패키지에 만든다. http 요청 응답에는 header가 존재한다. @Component어노테이션을 클래스에 붙여준다. 그 다음 HandlerInterceptor를 implements한다.
+
+2-2. Override method를 통해서 preHandle, postHandle, afterCompletion를 오버라이드 한다. 이떄 preHandle의 return은 true로 postHandle과 afterCompletion는 void이므로 함수 안의 내용을 없앤다.
+preHandle 메소드에서는 세션을 관리한다던지, 요청이 들어온 헤더에서 세션아이디를 확인을 하고, 그것이 HeaderLoggingInterceptor에 들어오면서 Spring application내부이므로 ModelAndView의 model과 DB에 model에도 접근할 수있는 권한이 있다. -> 여기에서는 서비스를 제공하기 위한 기능들이 많이 구현이 된다. 지금은 Enumeration을 사용할것이다. Enumeration은 iterator가 비슷하게 작동하는데 hasmoreElement를 대신 사용한다. (iterator는 hasnext를 사용)
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        HandlerMethod handlerMethod = (HandlerMethod) handler;
+        logger.info("start processing of {}", handlerMethod.getMethod().getName());
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while(headerNames.hasMoreElements()){
+            String headerName = headerNames.nextElement();
+            logger.trace("{}: {}", headerName, request.getHeader(headerName));
+        }
+
+        return true;
+    }
+이때 Object handler는 그냥 handler가 아니라 preHandle에 도달하기 위한 handlerMapping이 어떤함수에 요청을 보낼 것인지에 대한 판단을 하기위한 handler 객체이다. -> 확인하기 위해서 형변환 한다음 logger를 찍어본다.
+        HandlerMethod handlerMethod = (HandlerMethod) handler;
+        logger.info("start processing of {}", handlerMethod.getMethod().getName());
+
+=> 즉 preHandle은 들어온 요청에 대한 모든 header값들을 조사하는 함수이다. 
+
+2-3. postHandle에서 reponse의 header를 찾아볼 것이다.
+reponse의 경우 인터페이스가 Enumeration이 아니라 Collection이다. 
+   @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        Collection<String> headerNames = response.getHeaderNames();
+        for (String headerName: headerNames){
+            logger.trace("{}: {}", headerName, response.getHeader(headerName));
+        }
+    }
+
+2-4. afterCompletion 작성 postHandle과 거의 유사하다. 근데 afterCompletion의 인자의 마지막을 보면 Exception ex가 있다. 이것은 실제로 응답이 정상적으로 돌아오기 전에 예외가 발생했다던지 같은 부분에서 예외가 Exception ex인자로 주입이 되기는 하지만 문제는 이미 예외처리에 대한 설정들을 해놓았으면 Exception ex에서는 걸리지 않는다. 
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        HandlerMethod handlerMethod = (HandlerMethod) handler;
+        logger.info("start processing of {}", handlerMethod.getMethod().getName());
+        if(ex != null)logger.error("Exception occurred while processing", ex);
+    }
+
+2-5. interceptor 같은 경우는 인터페이스를 만들었다고 끝이 아니다 -> 이것을 등록을 해줘야한다. 등록을 Configuration의 Bean안에다가 만들어 준다. DemoConfiguration에다가 WebMvcConfigurer 를 implements하면 많은 Override Method들이 생긴다. 그중에서 addInterceptor 함수를 사용할 것이다. addInterceptor는 interceptor를 만들고 등록을 하고싶을 때 사용하는 함수이다. 
+egistry
+                .addInterceptor()하는 함수가 있는데 여기에서 우리가 사용하고 싶은 interceptor가 들어와야한다. 
+
+그러기 위해서
+
+    public DemoConfiguration(
+            @Autowired HeaderLoggingInterceptor headerLoggingInterceptor
+    ){
+        this.headerLoggingInterceptor = headerLoggingInterceptor;
+    }
+
+을 통해서 HeaderLoggingInterceptor을 가져온다. 그 다음 addInterceptor()안에 headerLoggingInterceptor을 넣어준다.
+
+@Configuration
+public class DemoConfiguration implements WebMvcConfigurer {
+    private static final Logger logger = LoggerFactory.getLogger(DemoConfiguration.class);
+    private final HeaderLoggingInterceptor headerLoggingInterceptor;
+    public DemoConfiguration(
+            @Autowired HeaderLoggingInterceptor headerLoggingInterceptor
+    ){
+        this.headerLoggingInterceptor = headerLoggingInterceptor;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry
+                .addInterceptor(headerLoggingInterceptor)
+                .addPathPatterns("/post/**")
+                .excludePathPatterns("/except/**");
+    }
+}
+
+-> 여기서 excludePathPatterns은 /expcept/로 들어오는 예외처리에 대한요청은 무시한다는 뜻 이다.
+
+
+
+Filter같은 경우 명백한 Body의 내용을 읽기가 매우 편하다. 대신에 그것을 실제로 조작하는데 들어가는 내용은 길다.
+interceptor같은 경우는 함수가 3개로 나눠져서 더 세밀한 조작이 가능하며 Spring의 일부이기 때문에 예외처리, DB, model 같은 부분들을 다 같이 사용할 수 있다. 

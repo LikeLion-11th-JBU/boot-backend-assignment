@@ -1,0 +1,120 @@
+Mybatis -> 데이터베이스를 다루는데 사용(데이터베이스와 관련된 자바 프레임워크), 원래는 JDBC라는 API를 통해서 JAVA에서 DB를 접속할 때 사용했지만, 그 과정을 훨씬 더 간편하게 해주었던 프레임워크이다.
+DB를 사용하는 이유 - 첫 번째 이유는 스프링 부트는 자바로 만들어진 프레임워크이고, 스프링 부트 내부에서 프로그래밍 언어를 사용할 때 JAVA 클래스를 통해 데이터를 다룬다.(POJO). 즉, 데이터를 담고 있는 클래스(사람 클래스이면 person class라고 하고 이름, 나이 등의 정보를 멤버변수로서 저장을 하게 된다.), 또는 JAVA 코드로 작성한 List, HashMap등은 메모리에 저장된다.(컴퓨터의 RAM 메모리에 올라가서 사용이된다.) -> 이렇게 될 경우 스프링 부트 어플리케이션이 종료가 되는 순간 거기안에 들어가 있던 데이터들도 전부 없어진다. -> DB에 저장해서 날라가지 않도록 한다.
+두 번째 이유는 스프링부트 어플리케이션을 여러 개 프로세스에 걸쳐서 띄울 수가 있는데, 하나의 프로세스에서 처리할 수 있는 한계가 있고, 그 한계를 메모리 할당량을 통해서 늘릴 수도 있지만, 동일한 서버 프로세스를 여러개 띄우는 방법도 생각을 할 수 있다. (같은 물리적 서버에 있지 않더라도 여러 서버 프로세스가 같은 기능을 하면서 데이터를 공유해야 된다는 점 때문에 DB를 사용해야 한다.)
+또한 관계형 데이터베이스 서버는 스프링부트와는 다른 프로세스 상에서 작동을 하고 있다. 즉, 스프링 부트 어플리케이션에서 기능을 통해서 사용을 할 데이터를 외부의 DB에 저장을 하고, 여러 어플리케이션 프로세스와 공유를 하면서 사용을 할 수 있도록 DB서버에다가 저장,유지되는 펄시스턴스 데이터를 저장을 하고, 그 데이터를 활용해야하는 어플리케이션에서 DB와 소통을 함으로서, 그 데이터를 자신이 필요로하는 형태로 바꾸어 사용을 할 수 있다. 
+-> REST와 연관이 있다. -> 실제 데이터는 DB에 저장이 되어 있는 형태인데, 이것을 어플리케이션에서 사용을 할 때에는  그 데이터를 JAVA의 내부에서 표현을 해서 가지고, 조작하고, 전달하고 전달받고, 다시 데이터베이스에 또 다른 형태로 저장을 한다. -> 즉 표현의 형태만 주고받는 것이다. 
+DB는 Spring boot와 별개의 것이다. 즉 SpringBoot의 외부에 있을 수도 있고, 같은 컴퓨터에 있을 수도 있지만, 일단 기본적으로 서로 다른 서버 프로세스상에서 작동을 한다. 
+MyMatis를 사용하면 JAVA함수를 SQL 선언문(select * from post 같은 문장을 함수와 연결시킨 다음 그 함수의 결과가 DB의 select문의 결과로 나왔던 table로 나오게 되는데, 그것을 다시 JAVA object로 연결을 시켜준다) 과 연결지어 사용한다. 즉, JAVA 클래스를 이용하여 SQL 결과를 받거나, SQL 선언문에서 사용할 인자를 전달한다. (java함수를 SQL의 statement와 연결을 시켜서 사용하게 된다. 또한 SQL 선언문인 예를 들어 insert문 또는 select * from where 문에 들어가야할 값들인 인자들을 java클래스를 이용해서 받는다.)   -> JPA와 가장 큰 차이점은 함수를 선언문과 연결지어서 사용한다는 점이다. 
+일반적으로 DB를 사용할 때 SQL 선언문을 사용하는데, 이때 select * from restaurants(table이다)이라는 형태로 선언하게 된다면 그 결과가 table의 형태(row라는 열, col라는 행으로 되어있는 table 데이터형태)로 돌아오는 것이 관계형 데이터 베이스이다. 
+Mybatis 또는 일반적인컴프로그래밍 언어에서의 DB의 데이터를 사용을 할 때 table에 존재하는 하나의 Row(열)를 자바의 기준으로 봤을 때 class로서 정의를 해서 사용을 하게 된다. (하나의 row의 형태 -> 컬럼들이 어떻게 구분되어 있는지가 Row한줄의 역할이 된다. -> 이것들을 클래스로 만들고 Dto라는 형태(data transfer object)로 부른다. 예를 들어서 restaurantDto에는 레스토랑의 name과 category등이 들어갈 수 있다. Dto라는 말은 여러 군데에서 많이 쓴다. Controller에서 받게되는 RequestBody역시 Dto이다.) 만약 table의 결과가 여러 줄이 된다면 이 class (레스토랑Dto)에 여러 인스턴스 들이 collection(List)의 형태로 돌아오게 된다. 이런 것을 Mybatis에서는 각각의 SQL선언문들을 xml의 형태로 저장해놓게 된다. 그러고 나서 xml을 어플리케이션을 실행하면서 불러들이고, 그 내용물들을 읽어서 다음단계로, 우리가 미리 정의해 놓은 자바 코드상에 있는 함수(JAVA Interface)와 연결을 시켜준다. 그리고 어떤 함수와 어떤 선언문이 연결될지도 xml상에서 정리가 된다.
+Mybatis는 스프링부트 안에 있는 프로젝트는 아니기 때문에 Dependencies에 추가해줘야한다. Mybatis는 결과적으로 DB와 소통을 하기 위한 도구인데, 이때 그래픽카드 드라이버가 있어야 컴퓨터가 하드웨어와 소통을 할 수 있듯이 MYSQL이라는 DB의 Driver가 있어야지 Mybatis라는 프레임워크가 실제 DB 서버와 소통을 할 수 있다. 
+
+application.yml 파일에
+mapper-locations: "classpath:mybatis/mappers/*.xml" 는 classpath라는 것은 resources를 root로 보고 mybatis/mappers/*.xml로 끝나는 폴더를 다 찾는다는 의미이다. 즉 이 설정을 조작해주면 xml파일을 다른 곳에다가 둬도 확인할 수 있다.
+map-underscore-to-camel-case: true 추가적인 설정들 중에서 이것 하나만 추가하면 대부분의 DB는 underscore(스네이크 케이스)를 사용하게 된다. snake_case라고 한다면 빈칸을 채워주기위해 사용하는 문자를 _ 라고 하고, camelCase는 띄어쓰기 다음글자를 대문자로 쓰는 것이다. PascalCase는 앞글자와 띄어쓰기 다음글자를 대문자로 쓰는 것이다. 즉, 이 설정이 켜져 있으면 자바에서 사용하는 camelCase대로 사용한다고 하더라도 Mybatis에서 자동적으로 전달을 할 때 snake_case로 전환을 해준다는 의미이다. 이것은 데이터 자체의 내용을 변화시킨다는 것이 아니고 인자로 사용되는 칼럼의 이름같은 것들을, 즉 테이블 col의 결과물이 _로 나오게 된다면 그것을 camelCase로 치환을 해서 Java랑 연결을 해준다는 의미이다.
+
+dao (data access object) - Repository. 즉, 데이터를 주고받는 기능을 해주기 위한 객체들을 부르는 말이다. 다른 스프링 부트 어플리케이션과 소통을 하기 위한 클래스이다. 
+dto - 실제 데이터를 담기 위한 오브젝트들로 구성되어 있다. 
+mapper - resources의 post-mapper.xml,board-mapper.xml에서 작성한 애들을 postMapper과 BoardMapper 인터페이스에 있는 동일한 함수명으로 작성을 해주면, 그것들이 xml 설정에 따라서 연결이 된다. 즉 xml의 <mapper> <mapper> 사이에 채워질 SQL문이 Interface에 정의되어 있는 함수와 연결이 되어진다.
+
+insert into POST(title, content, writer, board)   -> insert를 이용해서  POST라는 table의 4개의 col에다가 
+        values (title, content, writer, board)    -> values를 통해 이러한 값들을 넣어줘라는 뜻이다. -> id col은 자동으로 생성이 된다. 
+        <mapper namespace="dev.aquashdw.mybatis.mapper.PostMapper">
+    <insert id="createPost" parameterType="dev.aquashdw.mybatis.dto.PostDto"> 에서 insert id = "createPost"가 중요한데 mapper namespace에 있는 "dev.aquashdw.mybatis.mapper.PostMapper"의 인터페이스와 createPost라는 id를 가지고 어떤 함수에 이 SQL문을 일치시켜줄지를 결정한다. 즉 PostMapper라는 인터페이스에 post-mapper.xml의 insert문에 createPost라는 id를 가진 이 insert문을 연결해주기 위해서 PostMapper 인터페이스에다가 void createPost()라고 작성을한다. 
+    그리고 post-mapper.xml에서 parameterType으로 지정해 놓은 "dev.aquashdw.mybatis.dto.PostDto"은 void createPost가 받아들일 파라미터 타입을 의미한다. 즉 이렇게 하면 xml 파일의 id="createPost"가 인터페이스의 int createPost()와 일치하고, xml의 namespace의 PostMapper가 인터페이스의 이름인 PostMapper와 일치를 하면 이 인터페이스가 post-mapper.xml파일을 나타내게 된다.
+    dto 패키지의 PostDto 클래스는 table 형태에 따라서 인자로 작성을 해주면 된다. ( DB에서 사용하는 문자열을 저장을 하기위한 데이터형들은 굉장히 많지만, java에서는 다 String으로 해도 상관없다.)
+    map-underscore-to-camel-case: true 를 하면 java는 일반적으로 camelCase를 많이 사용하고, BD는 snake_case를 많이 사용하는데, 이 설정을 통해서 그 간격을 줄일 수 있다. 
+    이렇게 dto 패키지의 PostDto를 정의하고 생성자, toString, Getter와 Setter를 정의하면 Postmapper 인터페이스에서 사용할 Dto와 post-mapper.xml에서 사용할 Dto가 다 정의되었다. 이제 Dto에 인자들이 실제로 존재하는 상태이다. 그 인자들을 xml에서 정의를 해놨던 SQL문에서 실제로 사용을 해야한다. 이때 SQL 문을 values (title, content, writer, board)게 쓰면 SQL문에서는 이해하지 못하는 문자열 title이다. 이제 dto 패키지의 PostDto 클래스에서 전달하는 Private String title과 동일한 값이기 위해서는 2가지 경우가 있다. 1번 경우는 문자열로서 사용을 할때는 values (#{title}, #{content}, #{writer}, board)을 한다.
+    즉 #{} 안에 PostDto 클래스가 가지고 있는 멤버변수의 이름(title)을 쓰면 된다. -> 문자열의 경우 -> 이렇게 쓰면 PostDto의 getTitle라는 함수를 호출하는 것과 거의 동일하다. 
+    2번째로 board 같은 경우는 join table에서 사용하기 위한 board id이다. 이것은 문자열이 아니므로 ${}를 사용한다. $를 사용하면 인자의 값이 그대로 ${board}에다가 SQL의 선언문이 일부로서 작성이 된다. -> (#{title}, #{content}, #{writer}, ${board})
+    이렇게 하면 board에는 int값이 그대로 들어가게 된다. 
+    즉 #{title}이라고 한다면 여기에 값이 title 이라고 했을 때 'title'이 들어가고 ${title}이라고 한다면 여기에 값이 title이라고 했을 때 title로 따옴표가 없어진다. ${board}의 값이 1이였으면 == '1' 이지만, #{board}의 값이 1이였으면 == 1이다.. 
+    (요약) ${board} == '1', #{title} == 'title' / ${title} == title
+지금까지는 create에 대한 insert
+
+지금부터는 read에 대한 select
+    인자를 기본적으로 하나를 가져올 때는 DB에서는 primary Key를 사용한다. -> int 사용한다. 또한 select의 결과가 있는데, 그 결과는 table 형태로 나올 것이고, 그 table의 결과를 다시 정리를 해서 (resultType) 우리가 사용하고 싶은 형태의 object로 만들어 준다.(Dto라고 한다.) -> 어떤 Dto를 사용할 것인지 즉
+    id="readPost" 
+            parameterType="int" 
+            resultType="dev.aquashdw.mybatis.dto.PostDto">
+        select * from post where id = ${id}
+    는 id가 동일한 post를 돌려주게 된다는 select문이다. 
+    그렇기 때문에 PostMapper라는 인터페이스에는 결과값이 존재하고, Primary Key 기준으로 요청을 했으므로 결과값이 하나여야한다. 그러므로 PostMapper라는 인터페이스에 PostDto readPost(int id);  즉, PostDto를 반환값으로 받는 readPost라는 함수를 만든다. 
+    만약 전부 다 read하고 싶을 때는
+      <select id="readPost" resultType="dev.aquashdw.mybatis.dto.PostDto">
+        select * from post 만 쓰면된다 . parameterType는 필요없다. 또한 결과가 한줄이 아니므로 List의 구현체로서 반환이 된다. 하지만 우리는 어떤 구현체인지 신경 쓸 필요가 없다. 즉 PostMapper 인터페이스에는 List<PostDto>readPostAll();를 써야한다.
+
+지금부터는 Update
+resultType이 있지 않다. 즉
+<update id="updatePost" parameterType="dev.aquashdw.mybatis.dto.PostDto">
+        update post set title = #{title}, content = #{content}, writer = #{writer}, board = ${board}
+이 되고 그 이유는 title에 업데이트값 #{title}을 넣어주는 것이다. 
+또한 몇번째 id를 update할 것인지 써줘야하므로 where id = ${id}를 한다. (하나를 업데이트 할 것이기 때문이다.)
+이렇게 만들면 PostMapper 인터페이스에 Update에 대한 함수가 만들어져야한다. -> int updatePost(PostDto dto);
+int 인 이유는 update에 대한 결과값은 int이기 때문이고, parameterType이 PostDto이기 때문에 int updatePost()의 파라미터 안에 PostDto dto를 넣는다.
+
+지금부터는 delete 
+<delete id="deletePost" parameterType="int">
+        delete from post where id = ${id}
+가 되고 parameterType은 Dto가 될 수 도 있다. (다른 select, insert, update,delete의 parameterType은 모두 Dto가 될 수 있다.)
+이렇게 만들면 PostMapper 인터페이스에 delete에 대한 함수가 만들어져야한다. -> int deletePost(int id);
+int 인 이유는 delete에 대한 결과값이 int 값이기 때문이고, parameterType이 int id 임으로 int deletePost();의 파라미터 안에 int id를넣어줘야한다. 
+
+PostDao는 실제로 BoardMapper 인터페이스를 사용을 해서 통신을 하는 클래스 역할을 하기 때문에 필요한 것이 몇가지 있다.
+1. private final SqlSessionFactory sessionFactory; 가 필요하다. 
+또한 
+public PostDao(
+            @Autowired SqlSessionFactory sessionFactory                 // sqlSessionFactory가 필요하므로 @Autowired를 이용하여서 가져온다.
+    )
+또한 @Autowired 어노테이션을 사용하기 위해서는 PostDao 라는 것 자체가 Spring IoC 관리하에 있어야한다. -> @Component 아래에 있는 스테레오 타입들인데 이떄는 데이터를 주고받으므로 @Repository를 사용한다. -> 즉, @Repository라는 어노테이션을 붙여주게 되면 이 클래스가 데이터를 주고 받기위해서 존재하는 클래스인것을 알 수 있다. 
+또한 PostDao에서 PostMapper 인터페이스를 사용하기 위해서 
+public int createPost(PostDto dto){         // 이것은 외부에서 Dao를 사용할 때 사용할 함수를 정의하는 것이다.
+        SqlSession session = sessionFactory.openSession();
+        }  -> 이 함수의 내용물을 채워줄 때 Sqlsession(mybatis에 정의된 인터페이스)이 필요하다. 이 Sqlsession을 변수 session으로 받고, 이것을 sessionFactory에서 openSession을 통해서 열어주면 된다. 즉 SessionFactory안에 정의가된 openSession()이라는 함수이다. 
+이 함수를 만든 다음 PostMapper를 받아온다.
+
+xml과 Mapping이 되어 있는 자바 코드는 PostMapper라는 Interface이다. 이 인터페이스를 받아오기 위해서 PostMapper를 선언해주고 mapper라는 변수로 할당해준다. 그리고 PostMapper를 session.getMapper(PostMapper.class) 을 통해 세션에 존재하는 세션에서 PostMapper와 동일한 PostMapper.class(PostMapper 클래스 or 구현체)를 달라고 하고, PostMapper가 할당된 mapper 변수에는 PostMapper 인터페이스를 구현한 구현체가 주입이 된다. 이렇게 mapper 변수에 구현체가 주입이 되면 mapper는 PostMapper 인터페이스와 동일하기 때문에 PostMapper 안의 함수들을 다 사용할 수 있다. create를 사용하기 위해서 
+int rowAffected = mapper.createPost(dto);       // 이 시점에서 DB와 통신이 완료된 것이다.
+        session.close();    -> DB와 동신을 하기 위해서 Sqlsession이 유지가 되기 때문에 세션을 유지하지 않고 한번 통신이 완료되면 세션을 닫아준다. 그러면 DB와 또 다른 곳에서 연결을 하려고 할때 그 세션을 DB에서 다시 활용을 할 수 있다. 
+        return rowAffected;
+
+
+post-mapper.xml에서 <select 에 readPostQuery를 추가할때 는 parameterType까지 추가를 해준다.
+    <select id="readPostQuery"
+            parameterType="dev.aquashdw.mybatis.dto.PostDto"
+            resultType="dev.aquashdw.mybatis.dto.PostDto">
+
+    </select>
+Query문에 조건문을 사용한다. <if test="title ! =null(여기에다가 DB에서 어떠한 조건을 표현을 하는지에 따라서 사용을 해주면 된다. 즉, test에다가 PostDto가 만족하는 조건을 넣는다.) " > 이것은 title이 null이 아니라면 
+and title = #{title} title에 #{title}을 넣어라는 의미이다.
+</if>
+Query라고 하면 일반적으로 조회를 하고 URL의 뒤에다가 Query 파라미터를 넣어서 RequestParam을 받아올 수 있다.
+Query parameter는 특정한 조건에 대해서 조회를 하기위해서 사용을 한다.
+이렇게 Query문을 추가하면 PostMapper 인터페이스에 해당 Query문에 대한 함수를 추가해야한다.
+PostDto readPostQuery(PostDto dto); -> Dto 자체를 인자로서 전달을 해주면 된다.
+parameterType은 인터페이스에서 함수에서 받을 인자 -> 예를 들어 parameterType이 int이면 PostDto readPost()의 파라미터에는 (int id)가 들어간다.
+resultType은 결과가 돌려줘야되는 인자 또는 그 인자를 가지고 있는 collection의 형태 -> readPost가 만약 resultType이 PostDto이면 인터페이스의 함수는 PostDto로 선언한 readPost가 된다. 다른 경우 List<PostDto> 즉 이 PostDto가 가지고 있는 collection의 형태가 된다. 
+
+insert에 대해서 createPostAll을 하면 values 부분이 문제인데 -> 여기에 여러개의 값이 들어오기 때문이다. 이때 if 문과 비슷한 for each를 사용한다.
+<insert id="createPostAll"
+            parameterType="dev.aquashdw.mybatis.dto.PostDto">
+        insert into POST(title, content, writer, board)
+        values 
+        <foreach collection="list" item="item" seqarator=","> -> 어떠한 컬렉션을 돌려서 반복을 시킬지에대한 내용(#{title}, #{content}, #{writer}, ${board})을 적는다.
+            (#{title}, #{content}, #{writer}, ${board})
+        </foreach> 
+    여기서 seqarator =","는 이 반복문이 출력될 때 ,로 구분해준다는 의미이다.
+    item = "item"은 collection에 들어간 item을 (title, content....)뭐라고 부르겠다 -> "item" 이라고 부르겠다는 의미 => #{item.title}이 된다.
+    이렇게 insert 문을 추가하면 PostMapper 인터페이스에 해당 insert문에 대한 함수를 추가해야한다. 
+    int createPostAll(List<PostDto> dtoList)
+    Board를 만들때에 id값이 있어야지 Post를 만들때 Id 값을 활용할 수 가 있다. -> board가 없다면 그 board에 연관된 Post역시 만들수 없기 때문이다.
+    그렇기 때문에 원래는 Board를 먼저 생성해야한다.
+    Board를 생성했을 때 id값을 바로바로 돌려받아야할 필요가 있다. 
+    <insert id="createBoard"
+            useGeneratedKeys="true"
+            keyProperty="id"
+            parameterType="dev.aquashdw.mybatis.dto.BoardDto">
+    </insert>
+    이렇게 board-mapper.xml에 insert문을 추가하였기 때문에 BoradMapper 인터페이스에 해당 insert문에 대한 함수를 추가해야한다. 
+    int createBoard(BoardDto dto);
+
